@@ -6,10 +6,19 @@ const passwordResetModel = require("../models/passwordResetModel");
 const emailUtils = require("../utils/emailUtils");
 
 exports.register = async (req, res) => {
-  const { matric_number, email, password, full_name, level, department } = req.body;
-  if (!matric_number || !email || !password || !full_name || !level || !department)
+  const { matric_number, email, password, full_name, level, department } =
+    req.body;
+  if (
+    !matric_number ||
+    !email ||
+    !password ||
+    !full_name ||
+    !level ||
+    !department
+  )
     return res.status(400).json({
-      message: "Matric number, email, password, full name, level and department required.",
+      message:
+        "Matric number, email, password, full name, level and department required.",
     });
 
   try {
@@ -34,7 +43,7 @@ exports.register = async (req, res) => {
       password: hash,
       full_name,
       level,
-      department
+      department,
     });
 
     // registration is for creating user only; course assignment is handled
@@ -46,7 +55,7 @@ exports.register = async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "7d",
-      }
+      },
     );
 
     res.status(201).json({ token, user });
@@ -77,7 +86,7 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "7d",
-      }
+      },
     );
 
     res.json({ token, user });
@@ -91,7 +100,9 @@ exports.forgotPassword = async (req, res) => {
   const { matric_number, email } = req.body;
 
   if (!matric_number || !email) {
-    return res.status(400).json({ message: "Matric number and email required." });
+    return res
+      .status(400)
+      .json({ message: "Matric number and email required." });
   }
 
   try {
@@ -102,7 +113,7 @@ exports.forgotPassword = async (req, res) => {
 
     // Generate 6-digit OTP
     const code = crypto.randomInt(100000, 999999).toString();
-    
+
     await passwordResetModel.saveCode(email, "user", code);
     await emailUtils.sendResetCode(email, code);
 
@@ -117,13 +128,17 @@ exports.resetPassword = async (req, res) => {
   const { email, code, new_password } = req.body;
 
   if (!email || !code || !new_password) {
-    return res.status(400).json({ message: "Email, code, and new password required." });
+    return res
+      .status(400)
+      .json({ message: "Email, code, and new password required." });
   }
 
   try {
     const validCode = await passwordResetModel.verifyCode(email, "user", code);
     if (!validCode) {
-      return res.status(400).json({ message: "Invalid or expired reset code." });
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset code." });
     }
 
     const salt = await bcrypt.genSalt(10);
