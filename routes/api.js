@@ -54,5 +54,8 @@ router.get("/courses/code/:course_code", coursesController.getCourseByCourseCode
 router.post("/courses", auth, isAdmin, coursesController.createCourse);
 router.put("/courses/:id", auth, isAdmin, coursesController.updateCourse);
 router.delete("/courses/:id", auth, isAdmin, coursesController.deleteCourse);
+router.get("/admin/attendance", auth, isAdmin, attendanceController.getAllAttendanceRecords);
+router.get("/admin/attendance/:log_id", auth, isAdmin, attendanceController.getAttendanceByLogId);
+router.get("/admin/students", auth, isAdmin, adminAuthController.getAllStudents);
 
 module.exports = router;

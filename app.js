@@ -13,6 +13,7 @@ app.use(helmet()); // Protects against common web vulnerabilities
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(express.static("public"));
 
 // Routes
 app.use("/api", apiRoutes);

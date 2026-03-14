@@ -185,3 +185,52 @@ exports.markAttendance = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+
+exports.getAllAttendanceRecords = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        al.matric_number,
+        al.course_id,
+        al.status,
+        al.log_date,
+        al.distance_m,
+        al.accuracy_m,
+        u.full_name as student_name,
+        c.course_name
+      FROM attendance_logs al
+      LEFT JOIN users u ON al.matric_number = u.matric_number
+      LEFT JOIN courses c ON al.course_id = c.course_id
+      ORDER BY al.log_date DESC
+    `;
+    const result = await pool.query(query);
+    return res.status(200).json({ success: true, attendance: result.rows });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+exports.getAttendanceByLogId = async (req, res) => {
+  const { log_id } = req.params;
+  try {
+    const query = `
+      SELECT 
+        al.*,
+        u.full_name as student_name,
+        c.course_name
+      FROM attendance_logs al
+      LEFT JOIN users u ON al.matric_number = u.matric_number
+      LEFT JOIN courses c ON al.course_id = c.course_id
+      WHERE al.log_id::text = $1::text
+    `;
+    const result = await pool.query(query, [log_id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Attendance record not found" });
+    }
+    return res.status(200).json({ success: true, attendance: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
