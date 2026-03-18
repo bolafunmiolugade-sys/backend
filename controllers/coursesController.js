@@ -47,13 +47,13 @@ exports.getCourseByCourseCode = async (req, res) => {
 };
 
 exports.createCourse = async (req, res) => {
-  const { course_id, course_name, center_lat, center_lon, radius_m } = req.body;
+  const { course_id, course_name, center_lat, center_lon, radius_m, department, department_code } = req.body;
 
-  if (!course_id || !course_name || !center_lat || !center_lon || !radius_m) {
+  if (!course_id || !course_name || !center_lat || !center_lon || !radius_m || !department || !department_code) {
     return res.status(400).json({
       success: false,
       message:
-        "course_id, course_name, center_lat, center_lon, and radius_m are required.",
+        "course_id, course_name, center_lat, center_lon, radius_m, department, and department_code are required.",
     });
   }
   try {
@@ -63,6 +63,8 @@ exports.createCourse = async (req, res) => {
       center_lat,
       center_lon,
       radius_m,
+      department,
+      department_code,
     });
     return res.status(201).json({ success: true, course });
   } catch (err) {
@@ -75,18 +77,20 @@ exports.createCourse = async (req, res) => {
 
 exports.updateCourse = async (req, res) => {
   const { id } = req.params;
-  const { course_name, center_lat, center_lon, radius_m } = req.body;
+  const { course_name, center_lat, center_lon, radius_m, department, department_code } = req.body;
 
   if (
     course_name === undefined &&
     center_lat === undefined &&
     center_lon === undefined &&
-    radius_m === undefined
+    radius_m === undefined &&
+    department === undefined &&
+    department_code === undefined
   ) {
     return res.status(400).json({
       success: false,
       message:
-        "At least one of course_name, center_lat, center_lon, or radius_m must be provided to update.",
+        "At least one of course_name, center_lat, center_lon, radius_m, department, or department_code must be provided to update.",
     });
   }
 
@@ -96,6 +100,8 @@ exports.updateCourse = async (req, res) => {
       center_lat,
       center_lon,
       radius_m,
+      department,
+      department_code,
     });
 
     if (!updatedCourse)

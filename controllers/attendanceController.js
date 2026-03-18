@@ -44,7 +44,7 @@ exports.markAttendance = async (req, res) => {
     // 1. Course Validation
     const courseQuery = await pool.query(
       "SELECT * FROM courses WHERE course_id = $1",
-      [course_code]
+      [course_code],
     );
     if (courseQuery.rows.length === 0) {
       return res
@@ -53,9 +53,8 @@ exports.markAttendance = async (req, res) => {
     }
 
     // 2. Schedule Discovery
-    const schedule = await classScheduleModel.findActiveScheduleForCourse(
-      course_code
-    );
+    const schedule =
+      await classScheduleModel.findActiveScheduleForCourse(course_code);
 
     if (!schedule) {
       return res.status(404).json({
@@ -92,7 +91,7 @@ exports.markAttendance = async (req, res) => {
       // Calculate the exact time the "Gate" opens
       // Gate Time = Class End Time - (Minutes * 60,000 milliseconds)
       const gateOpenTime = new Date(
-        classEnd.getTime() - minutesBeforeEnd * 60000
+        classEnd.getTime() - minutesBeforeEnd * 60000,
       );
 
       // If right now is BEFORE that Gate Time, block them.
@@ -111,7 +110,7 @@ exports.markAttendance = async (req, res) => {
       schedule.location_lat,
       schedule.location_long,
       latitude,
-      longitude
+      longitude,
     );
     if (distance > GEOFENCE_MAX_M) {
       // Log rejected attempt for auditing
@@ -126,12 +125,12 @@ exports.markAttendance = async (req, res) => {
           "OUTSIDE_RANGE", // Fixed string literal for status
           distance.toFixed(2),
           accuracy,
-        ]
+        ],
       );
       return res.status(403).json({
         success: false,
         message: `You are too far from the class location (${distance.toFixed(
-          0
+          0,
         )}m).`,
       });
     }
@@ -139,7 +138,7 @@ exports.markAttendance = async (req, res) => {
     // 5. Duplicate Check
     const dup = await pool.query(
       "SELECT * FROM attendance_logs WHERE user_id = $1 AND schedule_id = $2 AND status = 'VALID'",
-      [userId, schedule_id]
+      [userId, schedule_id],
     );
     if (dup.rows.length > 0) {
       return res.status(409).json({
@@ -151,7 +150,7 @@ exports.markAttendance = async (req, res) => {
     // 6. Device Lock Check
     const deviceCheck = await pool.query(
       "SELECT * FROM attendance_logs WHERE device_uuid = $1 AND course_id = $2 AND log_date = CURRENT_DATE AND status = 'VALID'",
-      [device_uuid, course_code]
+      [device_uuid, course_code],
     );
     if (deviceCheck.rows.length > 0) {
       return res.status(403).json({
@@ -172,7 +171,7 @@ exports.markAttendance = async (req, res) => {
         device_uuid,
         distance.toFixed(2),
         accuracy,
-      ]
+      ],
     );
 
     return res
@@ -207,7 +206,9 @@ exports.getAllAttendanceRecords = async (req, res) => {
     return res.status(200).json({ success: true, attendance: result.rows });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
 
@@ -226,11 +227,15 @@ exports.getAttendanceByLogId = async (req, res) => {
     `;
     const result = await pool.query(query, [log_id]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Attendance record not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Attendance record not found" });
     }
     return res.status(200).json({ success: true, attendance: result.rows[0] });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };

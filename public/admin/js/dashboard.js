@@ -23,6 +23,7 @@ async function loadCourses() {
                 tr.innerHTML = `
                     <td>${course.course_id}</td>
                     <td>${course.course_name}</td>
+                    <td>${course.department || 'N/A'} (${course.department_code || 'N/A'})</td>
                     <td>${course.center_lat}, ${course.center_lon}</td>
                     <td>${course.radius_m}m</td>
                     <td>
@@ -48,6 +49,8 @@ document.getElementById('courseForm').addEventListener('submit', async (e) => {
     const payload = {
         course_id: document.getElementById('course_id').value,
         course_name: document.getElementById('course_name').value,
+        department: document.getElementById('department').value,
+        department_code: document.getElementById('department_code').value,
         center_lat: parseFloat(document.getElementById('center_lat').value),
         center_lon: parseFloat(document.getElementById('center_lon').value),
         radius_m: parseInt(document.getElementById('radius_m').value)
