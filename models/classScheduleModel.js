@@ -109,3 +109,12 @@ exports.updateSchedule = async (id, updates) => {
   );
   return res.rows[0];
 };
+
+// Delete a schedule by ID
+exports.deleteSchedule = async (id) => {
+  const res = await pool.query(
+    `DELETE FROM class_schedules WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  return res.rows[0];
+};

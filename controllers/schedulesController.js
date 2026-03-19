@@ -200,3 +200,26 @@ exports.getScheduleById = async (req, res) => {
   }
 };
 
+exports.deleteSchedule = async (req, res) => {
+  try {
+    const scheduleId = req.params.id;
+    const schedule = await classScheduleModel.getById(scheduleId);
+    if (!schedule) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Schedule not found." });
+    }
+
+    await classScheduleModel.deleteSchedule(scheduleId);
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Schedule deleted successfully." });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+

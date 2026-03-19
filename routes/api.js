@@ -43,6 +43,7 @@ router.get("/classes/schedule/:id", auth, schedulesController.getScheduleById);
 // General update to a class schedule (for lecturers)
 
 router.put("/classes/schedule/:id", auth, isLecturer, schedulesController.updateSchedule);
+router.delete("/classes/schedule/:id", auth, isLecturer, schedulesController.deleteSchedule);
 // Get attendance list for a specific schedule (for lecturers)
 router.get("/classes/schedule/:id/attendance", auth, isLecturer, attendanceController.getAttendanceByScheduleId);
 
