@@ -118,3 +118,74 @@ exports.deleteSchedule = async (id) => {
   );
   return res.rows[0];
 };
+// Get all schedules with attendance stats (for admin)
+exports.getAllSchedulesWithStats = async (filters = {}) => {
+  const { department, level } = filters;
+  let query = `
+    SELECT 
+        s.id,
+        s.course_code,
+        c.course_name,
+        c.department,
+        c.level,
+        s.lecturer_name,
+        s.class_start_time,
+        s.class_end_time,
+        s.is_active,
+        (SELECT COUNT(*) FROM student_courses WHERE s.course_code = ANY(courses)) as registered_count,
+        (SELECT COUNT(DISTINCT matric_number) FROM attendance_logs WHERE schedule_id = s.id AND status = 'VALID') as present_count
+    FROM class_schedules s
+    LEFT JOIN courses c ON s.course_code = c.course_id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (department) {
+    params.push(department);
+    query += ` AND c.department = $${params.length}`;
+  }
+  if (level) {
+    params.push(level);
+    query += ` AND c.level = $${params.length}`;
+  }
+
+  query += ` ORDER BY s.class_start_time DESC`;
+  
+  const res = await pool.query(query, params);
+  return res.rows;
+};
+
+// Get detailed attendance list for a specific schedule
+exports.getScheduleAttendanceDetails = async (scheduleId, courseCode, filters = {}) => {
+  const { department, level } = filters;
+  let query = `
+    SELECT 
+        u.full_name,
+        u.matric_number,
+        u.department,
+        u.level,
+        al.status,
+        al.log_date as marked_at,
+        al.distance_m
+    FROM (
+        SELECT matric_number FROM student_courses WHERE $2 = ANY(courses)
+    ) sc
+    JOIN users u ON sc.matric_number = u.matric_number
+    LEFT JOIN attendance_logs al ON al.matric_number = u.matric_number AND al.schedule_id = $1
+    WHERE 1=1
+  `;
+  const params = [scheduleId, courseCode];
+
+  if (department) {
+    params.push(department);
+    query += ` AND u.department = $${params.length}`;
+  }
+  if (level) {
+    params.push(level);
+    query += ` AND u.level = $${params.length}`;
+  }
+
+  query += ` ORDER BY u.full_name ASC`;
+  const res = await pool.query(query, params);
+  return res.rows;
+};

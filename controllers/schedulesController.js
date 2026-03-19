@@ -36,6 +36,14 @@ exports.createSchedule = async (req, res) => {
         .json({ success: false, message: "Course not found." });
     }
 
+    // Security: Check if lecturer is assigned to this course
+    if (course.lecturer_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Access Denied. You are not assigned to this course.",
+      });
+    }
+
     const schedule = await classScheduleModel.createSchedule({
       course_code: course_id,
       lecturer_name,
@@ -220,6 +228,36 @@ exports.deleteSchedule = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+// Admin: Get all schedules with attendance stats
+exports.getAdminSchedules = async (req, res) => {
+  const { department, level } = req.query;
+  try {
+    const schedules = await classScheduleModel.getAllSchedulesWithStats({ department, level });
+    return res.status(200).json({ success: true, schedules });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// Admin: Get detailed attendance list for a specific schedule
+exports.getAdminScheduleDetails = async (req, res) => {
+  const { id } = req.params;
+  const { course_code, department, level } = req.query; // Need course_code to find all registered students
+
+  if (!course_code) {
+    return res.status(400).json({ success: false, message: "Course code is required" });
+  }
+
+  try {
+    const details = await classScheduleModel.getScheduleAttendanceDetails(id, course_code, { department, level });
+    return res.status(200).json({ success: true, details });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 

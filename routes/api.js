@@ -65,5 +65,10 @@ router.delete("/courses/:id", auth, isAdmin, coursesController.deleteCourse);
 router.get("/admin/attendance", auth, isAdmin, attendanceController.getAllAttendanceRecords);
 router.get("/admin/attendance/:log_id", auth, isAdmin, attendanceController.getAttendanceByLogId);
 router.get("/admin/students", auth, isAdmin, adminAuthController.getAllStudents);
+router.get("/admin/lecturers", auth, isAdmin, adminAuthController.getAllLecturers);
+router.post("/admin/courses/:id/assign", auth, isAdmin, coursesController.assignLecturer);
+router.get("/admin/departments", auth, isAdmin, coursesController.getAdminDepartments);
+router.get("/admin/schedules", auth, isAdmin, schedulesController.getAdminSchedules);
+router.get("/admin/schedules/:id/details", auth, isAdmin, schedulesController.getAdminScheduleDetails);
 
 module.exports = router;

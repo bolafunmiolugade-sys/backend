@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const pool = require("../db/config");
+const lecturerModel = require("../models/lecturerModel");
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
@@ -59,6 +60,16 @@ exports.getAllStudents = async (req, res) => {
 
     const result = await pool.query(query, params);
     res.status(200).json({ success: true, students: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+exports.getAllLecturers = async (req, res) => {
+  try {
+    const lecturers = await lecturerModel.getAllLecturersWithCourses();
+    res.status(200).json({ success: true, lecturers });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Internal Server Error" });

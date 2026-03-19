@@ -34,3 +34,15 @@ exports.updatePassword = async (email, newHashedPassword) => {
   );
   return res.rows[0];
 };
+
+exports.getAllLecturersWithCourses = async () => {
+  const res = await pool.query(
+    `SELECT l.id, l.full_name, l.email, l.department, l.qualifications,
+            COALESCE(json_agg(json_build_object('course_id', c.course_id, 'course_name', c.course_name)) FILTER (WHERE c.course_id IS NOT NULL), '[]') as courses
+     FROM lecturers l
+     LEFT JOIN courses c ON l.id = c.lecturer_id
+     GROUP BY l.id
+     ORDER BY l.full_name ASC`
+  );
+  return res.rows;
+};
