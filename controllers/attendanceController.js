@@ -149,8 +149,8 @@ exports.markAttendance = async (req, res) => {
 
     // 6. Device Lock Check
     const deviceCheck = await pool.query(
-      "SELECT * FROM attendance_logs WHERE device_uuid = $1 AND log_id = $2 AND course_id = $3 AND log_date = CURRENT_DATE AND status = 'VALID'",
-      [device_uuid, log_id, course_code],
+      "SELECT * FROM attendance_logs WHERE device_uuid = $1 AND schedule_id = $2 AND course_id = $3 AND log_date = CURRENT_DATE AND status = 'VALID'",
+      [device_uuid, schedule_id, course_code],
     );
     if (deviceCheck.rows.length > 0) {
       return res.status(403).json({
