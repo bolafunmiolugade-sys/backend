@@ -239,3 +239,30 @@ exports.getAttendanceByLogId = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+
+exports.getAttendanceByScheduleId = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const query = `
+      SELECT 
+        al.*,
+        u.full_name as student_name,
+        u.full_name,
+        u.matric_number,
+        u.department
+      FROM attendance_logs al
+      LEFT JOIN users u ON al.user_id = u.id OR al.user_id::text = u.user_id::text
+      WHERE al.schedule_id::text = $1::text
+      AND al.status = 'VALID'
+      ORDER BY al.marked_at DESC
+    `;
+    const result = await pool.query(query, [id]);
+    return res.status(200).json({ success: true, attendance: result.rows });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+

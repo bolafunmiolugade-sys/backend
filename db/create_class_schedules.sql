@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS class_schedules (
   class_start_time TIMESTAMP WITH TIME ZONE NOT NULL,
   class_end_time TIMESTAMP WITH TIME ZONE NOT NULL,
   attendance_window_minutes INTEGER NULL DEFAULT NULL,
+  radius_m INTEGER DEFAULT 50,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );

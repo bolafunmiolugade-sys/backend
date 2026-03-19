@@ -1,0 +1,1 @@
+ALTER TABLE class_schedules ADD COLUMN IF NOT EXISTS radius_meters INTEGER DEFAULT 50;

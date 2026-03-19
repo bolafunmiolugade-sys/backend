@@ -39,8 +39,13 @@ router.patch(
   isLecturer,
   schedulesController.updateAttendanceWindow
 );
+router.get("/classes/schedule/:id", auth, schedulesController.getScheduleById);
 // General update to a class schedule (for lecturers)
+
 router.put("/classes/schedule/:id", auth, isLecturer, schedulesController.updateSchedule);
+// Get attendance list for a specific schedule (for lecturers)
+router.get("/classes/schedule/:id/attendance", auth, isLecturer, attendanceController.getAttendanceByScheduleId);
+
 // Student course registration (must be logged in)
 router.post("/register-courses", auth, userCourseController.registerCourses);
 router.get("/my-courses", auth, userCourseController.getMyCourses);

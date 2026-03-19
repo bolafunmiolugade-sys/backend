@@ -11,7 +11,10 @@ exports.createSchedule = async (req, res) => {
       class_start_time,
       class_end_time,
       attendance_window_minutes,
+      radius_m,
     } = req.body;
+
+
 
     if (
       !course_id ||
@@ -41,7 +44,10 @@ exports.createSchedule = async (req, res) => {
       class_start_time,
       class_end_time,
       attendance_window_minutes,
+      radius_m,
     });
+
+
 
     return res.status(201).json({ success: true, schedule });
   } catch (err) {
@@ -137,7 +143,10 @@ exports.updateSchedule = async (req, res) => {
       class_start_time,
       class_end_time,
       attendance_window_minutes,
+      radius_m,
     } = req.body;
+
+
 
     const schedule = await classScheduleModel.getById(scheduleId);
     if (!schedule) {
@@ -159,7 +168,10 @@ exports.updateSchedule = async (req, res) => {
       class_start_time,
       class_end_time,
       attendance_window_minutes,
+      radius_m,
     });
+
+
 
     return res.status(200).json({ success: true, schedule: updated });
   } catch (err) {
@@ -169,3 +181,22 @@ exports.updateSchedule = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+
+exports.getScheduleById = async (req, res) => {
+  try {
+    const scheduleId = req.params.id;
+    const schedule = await classScheduleModel.getById(scheduleId);
+    if (!schedule) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Schedule not found." });
+    }
+    return res.status(200).json({ success: true, schedule });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+

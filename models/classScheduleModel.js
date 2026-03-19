@@ -8,10 +8,14 @@ exports.createSchedule = async ({
   class_start_time,
   class_end_time,
   attendance_window_minutes = 10,
+  radius_m,
 }) => {
+
+
   const res = await pool.query(
-    `INSERT INTO class_schedules (course_code, lecturer_name, location_lat, location_long, class_start_time, class_end_time, attendance_window_minutes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    `INSERT INTO class_schedules (course_code, lecturer_name, location_lat, location_long, class_start_time, class_end_time, attendance_window_minutes, radius_m)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+
     [
       course_code,
       lecturer_name,
@@ -20,10 +24,13 @@ exports.createSchedule = async ({
       class_start_time,
       class_end_time,
       attendance_window_minutes,
+      radius_m,
     ]
+
   );
   return res.rows[0];
 };
+
 
 // Find the most recent active schedule for a course where class_start_time <= now() and still within attendance window
 exports.findActiveScheduleForCourse = async (course_code) => {
@@ -72,9 +79,12 @@ exports.updateSchedule = async (id, updates) => {
     class_start_time,
     class_end_time,
     attendance_window_minutes,
+    radius_m,
   } = updates;
 
-  // Builddynamic query based on provided fields (excluding undefined/null ones if you wanted to, but we'll assume a full update for simplicity or handle it via coalesce)
+
+  // Build dynamic query based on provided fields (excluding undefined/null ones if you wanted to, but we'll assume a full update for simplicity or handle it via coalesce)
+
   const res = await pool.query(
     `UPDATE class_schedules 
      SET 
@@ -82,16 +92,20 @@ exports.updateSchedule = async (id, updates) => {
         location_long = COALESCE($2, location_long),
         class_start_time = COALESCE($3, class_start_time),
         class_end_time = COALESCE($4, class_end_time),
-        attendance_window_minutes = COALESCE($5, attendance_window_minutes)
-     WHERE id = $6 RETURNING *`,
+        attendance_window_minutes = COALESCE($5, attendance_window_minutes),
+        radius_m = COALESCE($6, radius_m)
+     WHERE id = $7 RETURNING *`,
+
     [
       location_lat,
       location_long,
       class_start_time,
       class_end_time,
       attendance_window_minutes,
+      radius_m,
       id
     ]
+
   );
   return res.rows[0];
 };
