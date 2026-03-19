@@ -254,7 +254,7 @@ exports.getAttendanceByScheduleId = async (req, res) => {
       LEFT JOIN users u ON al.user_id = u.id OR al.user_id::text = u.user_id::text
       WHERE al.schedule_id::text = $1::text
       AND al.status = 'VALID'
-      ORDER BY al.marked_at DESC
+      ORDER BY al.log_date DESC
     `;
     const result = await pool.query(query, [id]);
     return res.status(200).json({ success: true, attendance: result.rows });
@@ -279,7 +279,7 @@ exports.getStudentAttendanceHistory = async (req, res) => {
         cs.class_start_time,
         cs.class_end_time,
         al.status AS attendance_status,
-        al.marked_at,
+        al.log_date,
         CASE 
           WHEN al.status = 'VALID' THEN 'Present'
           WHEN NOW() > cs.class_end_time THEN 'Absent'
