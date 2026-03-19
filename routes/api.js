@@ -28,6 +28,8 @@ router.post("/admin/login", adminAuthController.login);
 
 // Secure route: Student must be logged in to mark attendance
 router.post("/mark-attendance", auth, attendanceController.markAttendance);
+router.get("/student/attendance-history", auth, attendanceController.getStudentAttendanceHistory);
+
 
 // Lecturer/rep route: create a class schedule
 router.get("/classes/schedules", auth, schedulesController.getallSchedules);

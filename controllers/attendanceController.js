@@ -266,3 +266,39 @@ exports.getAttendanceByScheduleId = async (req, res) => {
   }
 };
 
+exports.getStudentAttendanceHistory = async (req, res) => {
+  const userId = req.user.id;
+  const matric_number = req.user.matric_number;
+
+  try {
+    const query = `
+      SELECT 
+        cs.id AS schedule_id,
+        cs.course_code,
+        c.course_name,
+        cs.class_start_time,
+        cs.class_end_time,
+        al.status AS attendance_status,
+        al.marked_at,
+        CASE 
+          WHEN al.status = 'VALID' THEN 'Present'
+          WHEN NOW() > cs.class_end_time THEN 'Absent'
+          ELSE 'Upcoming'
+        END AS display_status
+      FROM class_schedules cs
+      JOIN courses c ON cs.course_code = c.course_id
+      JOIN student_courses sc ON cs.course_code = ANY(sc.courses)
+      LEFT JOIN attendance_logs al ON cs.id = al.schedule_id AND al.user_id = $1 AND al.status = 'VALID'
+      WHERE sc.matric_number = $2
+      ORDER BY cs.class_start_time DESC
+    `;
+    const result = await pool.query(query, [userId, matric_number]);
+    return res.status(200).json({ success: true, history: result.rows });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
