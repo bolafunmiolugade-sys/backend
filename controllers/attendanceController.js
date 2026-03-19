@@ -149,14 +149,14 @@ exports.markAttendance = async (req, res) => {
 
     // 6. Device Lock Check
     const deviceCheck = await pool.query(
-      "SELECT * FROM attendance_logs WHERE device_uuid = $1 AND course_id = $2 AND log_date = CURRENT_DATE AND status = 'VALID'",
-      [device_uuid, course_code],
+      "SELECT * FROM attendance_logs WHERE device_uuid = $1 AND log_id = $2 AND course_id = $3 AND log_date = CURRENT_DATE AND status = 'VALID'",
+      [device_uuid, log_id, course_code],
     );
     if (deviceCheck.rows.length > 0) {
       return res.status(403).json({
         success: false,
         message:
-          "Security violation: This device has already been used for this course today.",
+          "Security violation: This device has already been used for this classs today.",
       });
     }
 
