@@ -68,7 +68,11 @@ exports.createSchedule = async (req, res) => {
 
 exports.getallSchedules = async (req, res) => {
   try {
-    const schedules = await classScheduleModel.getAllSchedules();
+    const filters = {};
+    if (req.user && req.user.role === 'lecturer') {
+      filters.lecturer_id = req.user.id;
+    }
+    const schedules = await classScheduleModel.getAllSchedulesWithStats(filters);
     return res.status(200).json({ success: true, schedules });
   } catch (err) {
     console.error(err);

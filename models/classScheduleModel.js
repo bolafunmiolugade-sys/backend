@@ -139,7 +139,7 @@ exports.deleteSchedule = async (id) => {
 };
 // Get all schedules with attendance stats (for admin)
 exports.getAllSchedulesWithStats = async (filters = {}) => {
-  const { department, level } = filters;
+  const { department, level, lecturer_id } = filters;
   let query = `
     SELECT 
         s.id,
@@ -151,6 +151,7 @@ exports.getAllSchedulesWithStats = async (filters = {}) => {
         s.class_start_time,
         s.class_end_time,
         s.is_active,
+        s.radius_m,
         (SELECT COUNT(*) FROM student_courses WHERE s.course_code = ANY(courses)) as registered_count,
         (SELECT COUNT(DISTINCT matric_number) FROM attendance_logs WHERE schedule_id = s.id AND status = 'VALID') as present_count
     FROM class_schedules s
@@ -167,10 +168,15 @@ exports.getAllSchedulesWithStats = async (filters = {}) => {
     params.push(level);
     query += ` AND c.level = $${params.length}`;
   }
+  if (lecturer_id) {
+    params.push(lecturer_id);
+    query += ` AND c.lecturer_id = $${params.length}`;
+  }
 
   query += ` ORDER BY s.class_start_time DESC`;
   
   const res = await pool.query(query, params);
+
   return res.rows;
 };
 

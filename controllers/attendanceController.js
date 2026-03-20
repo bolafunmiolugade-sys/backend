@@ -243,21 +243,19 @@ exports.getAttendanceByLogId = async (req, res) => {
 exports.getAttendanceByScheduleId = async (req, res) => {
   const { id } = req.params;
   try {
-    const query = `
-      SELECT 
-        al.*,
-        u.full_name as student_name,
-        u.full_name,
-        u.matric_number,
-        u.department
-      FROM attendance_logs al
-      LEFT JOIN users u ON al.user_id = u.id OR al.user_id::text = u.user_id::text
-      WHERE al.schedule_id::text = $1::text
-      AND al.status = 'VALID'
-      ORDER BY al.log_date DESC
-    `;
-    const result = await pool.query(query, [id]);
-    return res.status(200).json({ success: true, attendance: result.rows });
+    // 1. Get schedule to find course_code
+    const schedule = await classScheduleModel.getById(id);
+    if (!schedule) {
+      return res.status(404).json({ success: false, message: "Schedule not found" });
+    }
+
+    // 2. Get full roster with attendance status
+    const attendance = await classScheduleModel.getScheduleAttendanceDetails(id, schedule.course_code);
+    const mappedAttendance = attendance.map(a => ({
+      ...a,
+      status: a.status === 'VALID' ? 'Present' : 'Absent'
+    }));
+    return res.status(200).json({ success: true, attendance: mappedAttendance });
   } catch (err) {
     console.error(err);
     return res
