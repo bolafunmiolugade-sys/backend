@@ -1,16 +1,9 @@
 const pool = require("../db/config");
 const { calculateDistance } = require("../utils/haversine");
 const classScheduleModel = require("../models/classScheduleModel");
-const axios = require("axios");
 
 const A_MAX = 15; // Max allowed GPS accuracy (meters)
-const GEOFENCE_MAX_M = 50; // fallback radius
-const MAX_SPEED = 50; // m/s (~180 km/h)
-
-
-
-// const A_MAX = 15; // Max allowed GPS accuracy (meters)
-// const GEOFENCE_MAX_M = 50; // Maximum allowed distance from class location (meters)
+const GEOFENCE_MAX_M = 50; // Maximum allowed distance from class location (meters)
 
 exports.markAttendance = async (req, res) => {
   const {
@@ -195,7 +188,7 @@ exports.markAttendance = async (req, res) => {
 exports.getAllAttendanceRecords = async (req, res) => {
   try {
     const query = `
-      SELECT
+      SELECT 
         al.matric_number,
         al.course_id,
         al.status,
@@ -223,7 +216,7 @@ exports.getAttendanceByLogId = async (req, res) => {
   const { log_id } = req.params;
   try {
     const query = `
-      SELECT
+      SELECT 
         al.*,
         u.full_name as student_name,
         c.course_name
@@ -277,7 +270,7 @@ exports.getStudentAttendanceHistory = async (req, res) => {
 
   try {
     const query = `
-      SELECT
+      SELECT 
         cs.id AS schedule_id,
         cs.course_code,
         c.course_name,
@@ -285,7 +278,7 @@ exports.getStudentAttendanceHistory = async (req, res) => {
         cs.class_end_time,
         al.status AS attendance_status,
         al.log_date,
-        CASE
+        CASE 
           WHEN al.status = 'VALID' THEN 'Present'
           WHEN NOW() > cs.class_end_time THEN 'Absent'
           ELSE 'Upcoming'
@@ -306,5 +299,4 @@ exports.getStudentAttendanceHistory = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
-
 
