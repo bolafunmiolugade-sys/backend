@@ -53,8 +53,9 @@ router.get("/classes/schedule/:id/attendance", auth, isLecturer, attendanceContr
 router.post("/register-courses", auth, userCourseController.registerCourses);
 router.get("/my-courses", auth, userCourseController.getMyCourses);
 
-// Public course listing
-router.get("/courses", coursesController.listCourses);
+// Public course listing (now requires auth for filtered results)
+router.get("/courses", auth, coursesController.listCourses);
+
 router.get("/courses/:id", coursesController.getCourse);
 router.get("/courses/code/:course_code", coursesController.getCourseByCourseCode);
 

@@ -15,7 +15,6 @@ exports.createSchedule = async ({
   const res = await pool.query(
     `INSERT INTO class_schedules (course_code, lecturer_name, location_lat, location_long, class_start_time, class_end_time, attendance_window_minutes, radius_m)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-
     [
       course_code,
       lecturer_name,
@@ -26,21 +25,29 @@ exports.createSchedule = async ({
       attendance_window_minutes,
       radius_m,
     ]
-
   );
-  return res.rows[0];
+  
+  // Fetch the joined data to include course_name
+  const joinedRes = await pool.query(
+    `SELECT s.*, c.course_name 
+     FROM class_schedules s
+     LEFT JOIN courses c ON s.course_code = c.course_id
+     WHERE s.id = $1`, [res.rows[0].id]
+  );
+  return joinedRes.rows[0];
 };
 
 
 // Find the most recent active schedule for a course where class_start_time <= now() and still within attendance window
 exports.findActiveScheduleForCourse = async (course_code) => {
   const res = await pool.query(
-    `SELECT * FROM class_schedules 
-     WHERE course_code = $1 
-     AND is_active = true 
-     AND class_start_time <= now() 
-     AND now() <= (class_end_time + (COALESCE(attendance_window_minutes, 10) || ' minutes')::INTERVAL)
-     ORDER BY class_start_time DESC LIMIT 1`,
+    `SELECT s.*, c.course_name FROM class_schedules s
+     LEFT JOIN courses c ON s.course_code = c.course_id
+     WHERE s.course_code = $1 
+     AND s.is_active = true 
+     AND s.class_start_time <= now() 
+     AND now() <= (s.class_end_time + (COALESCE(s.attendance_window_minutes, 10) || ' minutes')::INTERVAL)
+     ORDER BY s.class_start_time DESC LIMIT 1`,
     [course_code]
   );
   return res.rows[0];
@@ -49,16 +56,22 @@ exports.findActiveScheduleForCourse = async (course_code) => {
 // Get all schedules (for admin/lecturer views)
 exports.getAllSchedules = async () => {
   const res = await pool.query(
-    `SELECT * FROM class_schedules ORDER BY class_start_time DESC`
+    `SELECT s.*, c.course_name 
+     FROM class_schedules s
+     LEFT JOIN courses c ON s.course_code = c.course_id
+     ORDER BY s.class_start_time DESC`
   );
   return res.rows;
 };
 
 // Optionally: find by id
 exports.getById = async (id) => {
-  const res = await pool.query(`SELECT * FROM class_schedules WHERE id = $1`, [
-    id,
-  ]);
+  const res = await pool.query(
+    `SELECT s.*, c.course_name 
+     FROM class_schedules s
+     LEFT JOIN courses c ON s.course_code = c.course_id
+     WHERE s.id = $1`, [id]
+  );
   return res.rows[0];
 };
 
@@ -95,7 +108,6 @@ exports.updateSchedule = async (id, updates) => {
         attendance_window_minutes = COALESCE($5, attendance_window_minutes),
         radius_m = COALESCE($6, radius_m)
      WHERE id = $7 RETURNING *`,
-
     [
       location_lat,
       location_long,
@@ -105,9 +117,16 @@ exports.updateSchedule = async (id, updates) => {
       radius_m,
       id
     ]
-
   );
-  return res.rows[0];
+  
+  // Fetch the joined data to include course_name
+  const joinedRes = await pool.query(
+    `SELECT s.*, c.course_name 
+     FROM class_schedules s
+     LEFT JOIN courses c ON s.course_code = c.course_id
+     WHERE s.id = $1`, [id]
+  );
+  return joinedRes.rows[0];
 };
 
 // Delete a schedule by ID
