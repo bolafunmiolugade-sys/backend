@@ -57,6 +57,7 @@ router.get("/my-courses", auth, userCourseController.getMyCourses);
 router.get("/courses", auth, coursesController.listCourses);
 
 router.get("/courses/:id", coursesController.getCourse);
+router.get("/courses/:id/members", auth, isLecturer, coursesController.getCourseMembers);
 router.get("/courses/code/:course_code", coursesController.getCourseByCourseCode);
 
 // Secure route: Create, Update, Delete a course (admin only)

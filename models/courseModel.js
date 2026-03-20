@@ -3,7 +3,8 @@ const pool = require("../db/config");
 exports.getAllCourses = async () => {
   const res = await pool.query(
     `SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
-            c.department, c.department_code, c.lecturer_id, l.full_name as lecturer_name
+            c.department, c.department_code, c.lecturer_id, l.full_name as lecturer_name,
+            (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id
      ORDER BY c.course_id`
@@ -14,7 +15,8 @@ exports.getAllCourses = async () => {
 exports.getCourseById = async (courseId) => {
   const res = await pool.query(
     `SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
-            c.department, c.department_code, c.lecturer_id, l.full_name as lecturer_name
+            c.department, c.department_code, c.lecturer_id, l.full_name as lecturer_name,
+            (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id
      WHERE c.course_id = $1`,
@@ -38,12 +40,25 @@ exports.getCourseByCourseCode = async (course_id) => {
 exports.getCoursesByLecturerId = async (lecturerId) => {
   const res = await pool.query(
     `SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
-            c.department, c.department_code, c.lecturer_id, l.full_name as lecturer_name
+            c.department, c.department_code, c.lecturer_id, l.full_name as lecturer_name,
+            (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id
      WHERE c.lecturer_id = $1
      ORDER BY c.course_id`,
     [lecturerId]
+  );
+  return res.rows;
+};
+
+exports.getCourseMembers = async (courseId) => {
+  const res = await pool.query(
+    `SELECT u.user_id, u.full_name, u.matric_number, u.email, u.level, u.department
+     FROM users u
+     JOIN student_courses sc ON u.matric_number = sc.matric_number
+     WHERE $1 = ANY(sc.courses)
+     ORDER BY u.full_name ASC`,
+    [courseId]
   );
   return res.rows;
 };

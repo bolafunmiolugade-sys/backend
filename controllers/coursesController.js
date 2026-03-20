@@ -187,3 +187,31 @@ exports.getAdminDepartments = async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+exports.getCourseMembers = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const course = await courseModel.getCourseById(id);
+    if (!course)
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found" });
+
+    // Security: Lecturers can only view members of their own courses
+    if (req.user.role === "lecturer" && course.lecturer_id !== req.user.id) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Access Denied. This course is not assigned to you.",
+        });
+    }
+
+    const members = await courseModel.getCourseMembers(id);
+    return res.status(200).json({ success: true, members });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
