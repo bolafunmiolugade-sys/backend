@@ -152,6 +152,8 @@ exports.getAllSchedulesWithStats = async (filters = {}) => {
         s.class_end_time,
         s.is_active,
         s.radius_m,
+        s.location_lat,
+        s.location_long,
         (SELECT COUNT(*) FROM student_courses WHERE s.course_code = ANY(courses)) as registered_count,
         (SELECT COUNT(DISTINCT matric_number) FROM attendance_logs WHERE schedule_id = s.id AND status = 'VALID') as present_count
     FROM class_schedules s
