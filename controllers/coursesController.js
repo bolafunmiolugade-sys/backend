@@ -67,13 +67,13 @@ exports.getCourseByCourseCode = async (req, res) => {
 };
 
 exports.createCourse = async (req, res) => {
-  const { course_id, course_name, center_lat, center_lon, radius_m, department, department_code, lecturer_id } = req.body;
+  const { course_id, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id } = req.body;
 
-  if (!course_id || !course_name || !center_lat || !center_lon || !radius_m || !department || !department_code) {
+  if (!course_id || !course_name || !center_lat || !center_lon || !radius_m || !department || !department_code || !level) {
     return res.status(400).json({
       success: false,
       message:
-        "course_id, course_name, center_lat, center_lon, radius_m, department, and department_code are required.",
+        "course_id, course_name, center_lat, center_lon, radius_m, department, department_code, and level are required.",
     });
   }
   try {
@@ -85,6 +85,7 @@ exports.createCourse = async (req, res) => {
       radius_m,
       department,
       department_code,
+      level,
       lecturer_id,
     });
     return res.status(201).json({ success: true, course });
@@ -98,7 +99,7 @@ exports.createCourse = async (req, res) => {
 
 exports.updateCourse = async (req, res) => {
   const { id } = req.params;
-  const { course_name, center_lat, center_lon, radius_m, department, department_code, lecturer_id } = req.body;
+  const { course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id } = req.body;
 
   if (
     course_name === undefined &&
@@ -107,6 +108,7 @@ exports.updateCourse = async (req, res) => {
     radius_m === undefined &&
     department === undefined &&
     department_code === undefined &&
+    level === undefined &&
     lecturer_id === undefined
   ) {
     return res.status(400).json({
@@ -124,6 +126,7 @@ exports.updateCourse = async (req, res) => {
       radius_m,
       department,
       department_code,
+      level,
       lecturer_id,
     });
 

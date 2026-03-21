@@ -132,6 +132,7 @@ async function loadCourses() {
                     <td>${course.radius_m}m</td>
                     <td>
                         <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn edit-course-btn" data-id="${course.course_id}" title="Edit">✏️</button>
                             <button class="action-btn assign-btn" data-id="${course.course_id}" data-name="${course.course_name}" data-dept="${course.department}" title="Assign Lecturer">👤</button>
                             <button class="action-btn delete-course-btn" data-id="${course.course_id}" title="Delete">🗑️</button>
                         </div>
@@ -143,6 +144,9 @@ async function loadCourses() {
 
             document.querySelectorAll('.delete-course-btn').forEach(btn => {
                 btn.addEventListener('click', () => deleteCourse(btn.getAttribute('data-id')));
+            });
+            document.querySelectorAll('.edit-course-btn').forEach(btn => {
+                btn.addEventListener('click', () => openEditCourseModal(btn.getAttribute('data-id')));
             });
             document.querySelectorAll('.assign-btn').forEach(btn => {
                 btn.addEventListener('click', () => openAssignModal(
@@ -218,6 +222,69 @@ async function deleteCourse(id) {
         alert('Connection error');
     }
 }
+
+async function openEditCourseModal(id) {
+    try {
+        const response = await adminFetch(`/api/courses/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const course = data.course;
+            document.getElementById('edit_course_db_id').value = course.course_id;
+            document.getElementById('edit_course_name').value = course.course_name;
+            document.getElementById('edit_course_dept').value = course.department;
+            document.getElementById('edit_course_dept_code').value = course.department_code;
+            document.getElementById('edit_course_level').value = course.level || '100';
+            document.getElementById('edit_course_lat').value = course.center_lat;
+            document.getElementById('edit_course_lon').value = course.center_lon;
+            document.getElementById('edit_course_radius').value = course.radius_m;
+            
+            document.getElementById('editCourseModal').style.display = 'flex';
+        }
+    } catch (err) {
+        console.error('Failed to load course details', err);
+        alert('Error loading course details');
+    }
+}
+
+document.getElementById('editCourseForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit_course_db_id').value;
+    
+    const body = {
+        course_name: document.getElementById('edit_course_name').value,
+        department: document.getElementById('edit_course_dept').value,
+        department_code: document.getElementById('edit_course_dept_code').value,
+        level: document.getElementById('edit_course_level').value,
+        center_lat: parseFloat(document.getElementById('edit_course_lat').value),
+        center_lon: parseFloat(document.getElementById('edit_course_lon').value),
+        radius_m: parseInt(document.getElementById('edit_course_radius').value)
+    };
+
+    try {
+        const response = await adminFetch(`/api/courses/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('editCourseModal').style.display = 'none';
+            loadCourses();
+            alert('Course updated successfully');
+        } else {
+            alert(data.message || 'Update failed');
+        }
+    } catch (err) {
+        console.error('Update error', err);
+        alert('Connection error');
+    }
+});
+
+document.getElementById('closeEditCourseModal')?.addEventListener('click', () => {
+    document.getElementById('editCourseModal').style.display = 'none';
+});
 
 // --- Lecturer & Assignment ---
 
