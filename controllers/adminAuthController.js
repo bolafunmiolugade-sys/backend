@@ -67,8 +67,9 @@ exports.getAllStudents = async (req, res) => {
 };
 
 exports.getAllLecturers = async (req, res) => {
+  const { department } = req.query;
   try {
-    const lecturers = await lecturerModel.getAllLecturersWithCourses();
+    const lecturers = await lecturerModel.getAllLecturersWithCourses(department);
     res.status(200).json({ success: true, lecturers });
   } catch (err) {
     console.error(err);

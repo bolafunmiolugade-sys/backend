@@ -161,9 +161,46 @@
               "
             >
               <h2>Active Courses</h2>
-              <span id="courseCount" class="status-badge status-active"
-                >0 Courses</span
-              >
+              <div style="display: flex; gap: 1rem; align-items: center">
+                <select
+                  id="courseLevelFilter"
+                  class="input-group input"
+                  style="
+                    margin-bottom: 0;
+                    padding: 0.5rem;
+                    width: 120px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    color: white;
+                  "
+                >
+                  <option value="">All Levels</option>
+                  <option value="100">100 Level</option>
+                  <option value="200">200 Level</option>
+                  <option value="300">300 Level</option>
+                  <option value="400">400 Level</option>
+                  <option value="500">500 Level</option>
+                </select>
+                <select
+                  id="courseDeptFilter"
+                  class="input-group input"
+                  style="
+                    margin-bottom: 0;
+                    padding: 0.5rem;
+                    width: 150px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    color: white;
+                  "
+                >
+                  <option value="">All Departments</option>
+                </select>
+                <span id="courseCount" class="status-badge status-active"
+                  >0 Courses</span
+                >
+              </div>
             </div>
 
             <div class="table-container">
@@ -173,6 +210,7 @@
                     <th>ID</th>
                     <th>Name</th>
                     <th>Dept (Code)</th>
+                    <th>Level</th>
                     <th>Lecturer</th>
                     <th>Location</th>
                     <th>Radius</th>
@@ -219,10 +257,8 @@
                   <option value="400">400 Level</option>
                   <option value="500">500 Level</option>
                 </select>
-                <input
-                  type="text"
+                <select
                   id="deptFilter"
-                  placeholder="Department..."
                   class="input-group input"
                   style="
                     margin-bottom: 0;
@@ -233,7 +269,9 @@
                     border-radius: 8px;
                     color: white;
                   "
-                />
+                >
+                  <option value="">All Departments</option>
+                </select>
                 <span id="studentCount" class="status-badge status-active"
                   >0 Students</span
                 >
@@ -408,6 +446,41 @@
             >
               <h2>Attendance Logs</h2>
               <div style="display: flex; gap: 1rem; align-items: center">
+                <select
+                  id="attendanceLevelFilter"
+                  class="input-group input"
+                  style="
+                    margin-bottom: 0;
+                    padding: 0.5rem;
+                    width: 120px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    color: white;
+                  "
+                >
+                  <option value="">All Levels</option>
+                  <option value="100">100 Level</option>
+                  <option value="200">200 Level</option>
+                  <option value="300">300 Level</option>
+                  <option value="400">400 Level</option>
+                  <option value="500">500 Level</option>
+                </select>
+                <select
+                  id="attendanceDeptFilter"
+                  class="input-group input"
+                  style="
+                    margin-bottom: 0;
+                    padding: 0.5rem;
+                    width: 150px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    color: white;
+                  "
+                >
+                  <option value="">All Departments</option>
+                </select>
                 <input
                   type="text"
                   id="attendanceSearch"

@@ -1,6 +1,7 @@
 const courseModel = require("../models/courseModel");
 
 exports.listCourses = async (req, res) => {
+  const { department, level } = req.query;
   try {
     let courses;
     // If lecturer is logged in, only show their assigned courses
@@ -8,7 +9,7 @@ exports.listCourses = async (req, res) => {
       courses = await courseModel.getCoursesByLecturerId(req.user.id);
     } else {
       // Otherwise (admin or student), show all courses
-      courses = await courseModel.getAllCourses();
+      courses = await courseModel.getAllCourses(department, level);
     }
     return res.status(200).json({ success: true, courses });
   } catch (err) {

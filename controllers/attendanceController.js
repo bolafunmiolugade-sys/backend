@@ -186,8 +186,9 @@ exports.markAttendance = async (req, res) => {
 };
 
 exports.getAllAttendanceRecords = async (req, res) => {
+  const { level, department } = req.query;
   try {
-    const query = `
+    let query = `
       SELECT 
         al.matric_number,
         al.course_id,
@@ -196,13 +197,33 @@ exports.getAllAttendanceRecords = async (req, res) => {
         al.distance_m,
         al.accuracy_m,
         u.full_name as student_name,
-        c.course_name
+        c.course_name,
+        c.level,
+        c.department
       FROM attendance_logs al
       LEFT JOIN users u ON al.matric_number = u.matric_number
       LEFT JOIN courses c ON al.course_id = c.course_id
-      ORDER BY al.log_date DESC
     `;
-    const result = await pool.query(query);
+    
+    const params = [];
+    const filters = [];
+
+    if (level) {
+      params.push(level);
+      filters.push(`c.level = $${params.length}`);
+    }
+    if (department) {
+      params.push(department);
+      filters.push(`c.department = $${params.length}`);
+    }
+
+    if (filters.length > 0) {
+      query += " WHERE " + filters.join(" AND ");
+    }
+
+    query += " ORDER BY al.log_date DESC";
+
+    const result = await pool.query(query, params);
     return res.status(200).json({ success: true, attendance: result.rows });
   } catch (err) {
     console.error(err);

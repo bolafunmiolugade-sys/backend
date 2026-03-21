@@ -101,8 +101,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- Courses Management ---
 
 async function loadCourses() {
+    const department = document.getElementById('courseDeptFilter')?.value;
+    const level = document.getElementById('courseLevelFilter')?.value;
+    
+    let url = '/api/courses';
+    const params = new URLSearchParams();
+    if (department) params.append('department', department);
+    if (level) params.append('level', level);
+    if (params.toString()) url += `?${params.toString()}`;
+
     try {
-        const response = await adminFetch('/api/courses');
+        const response = await adminFetch(url);
         const data = await response.json();
         
         if (data.success) {
@@ -117,24 +126,30 @@ async function loadCourses() {
                     <td>${course.course_id}</td>
                     <td>${course.course_name}</td>
                     <td>${course.department || 'N/A'} (${course.department_code || 'N/A'})</td>
+                    <td>${course.level || 'N/A'}</td>
                     <td>${course.lecturer_name || '<span style="color: var(--text-muted)">Unassigned</span>'}</td>
                     <td>${course.center_lat}, ${course.center_lon}</td>
                     <td>${course.radius_m}m</td>
                     <td>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button class="action-btn assign-btn" data-id="${course.course_id}" data-name="${course.course_name}" title="Assign Lecturer">👤</button>
+                            <button class="action-btn assign-btn" data-id="${course.course_id}" data-name="${course.course_name}" data-dept="${course.department}" title="Assign Lecturer">👤</button>
                             <button class="action-btn delete-course-btn" data-id="${course.course_id}" title="Delete">🗑️</button>
                         </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+// ... (rest of the function stays same, adding listeners below)
 
             document.querySelectorAll('.delete-course-btn').forEach(btn => {
                 btn.addEventListener('click', () => deleteCourse(btn.getAttribute('data-id')));
             });
             document.querySelectorAll('.assign-btn').forEach(btn => {
-                btn.addEventListener('click', () => openAssignModal(btn.getAttribute('data-id'), btn.getAttribute('data-name')));
+                btn.addEventListener('click', () => openAssignModal(
+                    btn.getAttribute('data-id'), 
+                    btn.getAttribute('data-name'),
+                    btn.getAttribute('data-dept')
+                ));
             });
         }
     } catch (err) {
@@ -261,12 +276,38 @@ function populateLecturerSelect(lecturers) {
     });
 }
 
-function openAssignModal(courseId, courseName) {
+async function openAssignModal(courseId, courseName, department) {
     const modal = document.getElementById('assignModal');
     if (!modal) return;
+    
     document.getElementById('assign_course_id').value = courseId;
     document.getElementById('assignCourseName').textContent = `Assigning lecturer for: ${courseName} (${courseId})`;
+    
+    // Clear and show loading state
+    const select = document.getElementById('lecturer_select');
+    if (select) {
+        while (select.options.length > 2) select.remove(2);
+        const loadingOpt = document.createElement('option');
+        loadingOpt.textContent = 'Loading lecturers...';
+        loadingOpt.disabled = true;
+        select.appendChild(loadingOpt);
+    }
+    
     modal.style.display = 'flex';
+
+    try {
+        // Fetch lecturers for this specific department
+        const response = await adminFetch(`/api/admin/lecturers?department=${encodeURIComponent(department)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            populateLecturerSelect(data.lecturers);
+        } else {
+            console.error('Failed to load lecturers for department');
+        }
+    } catch (err) {
+        console.error('Error fetching lecturers', err);
+    }
 }
 
 document.getElementById('closeAssignModal')?.addEventListener('click', () => {
@@ -458,8 +499,11 @@ async function loadDepartments() {
 function populateDepartmentSelects(departments) {
     const mainSelect = document.getElementById('mainSchedDeptFilter');
     const detailSelect = document.getElementById('schedDeptFilter');
+    const courseSelect = document.getElementById('courseDeptFilter');
+    const studentSelect = document.getElementById('deptFilter');
+    const attendanceSelect = document.getElementById('attendanceDeptFilter');
     
-    [mainSelect, detailSelect].forEach(select => {
+    [mainSelect, detailSelect, courseSelect, studentSelect, attendanceSelect].forEach(select => {
         if (!select) return;
         // Keep the first "All" option
         while (select.options.length > 1) {
@@ -521,8 +565,17 @@ function displayStudents(students) {
 let attendanceData = [];
 
 async function loadAttendance() {
+    const level = document.getElementById('attendanceLevelFilter')?.value;
+    const department = document.getElementById('attendanceDeptFilter')?.value;
+
+    let url = '/api/admin/attendance';
+    const params = new URLSearchParams();
+    if (level) params.append('level', level);
+    if (department) params.append('department', department);
+    if (params.toString()) url += `?${params.toString()}`;
+
     try {
-        const response = await adminFetch('/api/admin/attendance');
+        const response = await adminFetch(url);
         const data = await response.json();
         
         if (data.success) {
@@ -600,7 +653,10 @@ document.getElementById('closeModal')?.addEventListener('click', () => {
 // --- Listeners & Utils ---
 
 document.getElementById('levelFilter')?.addEventListener('change', loadStudents);
-document.getElementById('deptFilter')?.addEventListener('input', debounce(loadStudents, 500));
+document.getElementById('deptFilter')?.addEventListener('change', loadStudents);
+
+document.getElementById('courseLevelFilter')?.addEventListener('change', loadCourses);
+document.getElementById('courseDeptFilter')?.addEventListener('change', loadCourses);
 
 document.getElementById('lecturerSearch')?.addEventListener('input', (e) => {
     const searchTerm = e.target.value.toLowerCase();
@@ -624,6 +680,9 @@ document.getElementById('attendanceSearch')?.addEventListener('input', (e) => {
     );
     displayAttendance(filtered);
 });
+
+document.getElementById('attendanceLevelFilter')?.addEventListener('change', loadAttendance);
+document.getElementById('attendanceDeptFilter')?.addEventListener('change', loadAttendance);
 
 function debounce(func, wait) {
     let timeout;
