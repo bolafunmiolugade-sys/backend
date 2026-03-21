@@ -234,6 +234,7 @@ td {
   color: white;
 }
 
-#lecturer_select option {
-  color: black;
+#lecturer_select option,
+select option {
+  color: black !important;
 }

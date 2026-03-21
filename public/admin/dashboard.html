@@ -310,6 +310,22 @@
             >
               <h2>Lecturer Management</h2>
               <div style="display: flex; gap: 1rem; align-items: center">
+                <select
+                  id="lecturerDeptFilter"
+                  class="input-group input"
+                  style="
+                    margin-bottom: 0;
+                    padding: 0.5rem;
+                    width: 150px;
+                    background: white;
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    color: black;
+                    font-weight: 500;
+                  "
+                >
+                  <option value="">All Departments</option>
+                </select>
                 <input
                   type="text"
                   id="lecturerSearch"
@@ -384,7 +400,7 @@
                           width: 100%;
                           margin-top: 0.5rem;
                           padding: 0.3rem;
-                          background: rgba(0,0,0,0.2);
+                          background: rgba(0, 0, 0, 0.2);
                           border: 1px solid var(--glass-border);
                           border-radius: 4px;
                           color: white;
@@ -403,7 +419,7 @@
                           width: 100%;
                           margin-top: 0.5rem;
                           padding: 0.3rem;
-                          background: rgba(0,0,0,0.2);
+                          background: rgba(0, 0, 0, 0.2);
                           border: 1px solid var(--glass-border);
                           border-radius: 4px;
                           color: white;
@@ -713,7 +729,7 @@
                       width: 100%;
                       margin-top: 0.5rem;
                       padding: 0.3rem;
-                      background: rgba(0,0,0,0.2);
+                      background: rgba(0, 0, 0, 0.2);
                       border: 1px solid var(--glass-border);
                       border-radius: 4px;
                       color: white;
@@ -732,7 +748,7 @@
                       width: 100%;
                       margin-top: 0.5rem;
                       padding: 0.3rem;
-                      background: rgba(0,0,0,0.2);
+                      background: rgba(0, 0, 0, 0.2);
                       border: 1px solid var(--glass-border);
                       border-radius: 4px;
                       color: white;
@@ -761,70 +777,114 @@
     </div>
 
     <!-- Edit Course Modal -->
-    <div 
-        id="editCourseModal" 
-        class="dashboard-container"
-        style="
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        "
+    <div
+      id="editCourseModal"
+      class="dashboard-container"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      "
     >
-        <div class="glass-panel card" style="width: 90%; max-width: 500px; padding: 2rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2>Edit Course</h2>
-                <button id="closeEditCourseModal" class="action-btn" style="background: transparent; color: white; font-size: 1.5rem;">✕</button>
-            </div>
-            
-            <form id="editCourseForm">
-                <input type="hidden" id="edit_course_db_id">
-                <div class="input-group">
-                    <label>Course Name</label>
-                    <input type="text" id="edit_course_name" class="input" required>
-                </div>
-                <div class="input-group">
-                    <label>Department</label>
-                    <input type="text" id="edit_course_dept" class="input" required>
-                </div>
-                <div class="input-group">
-                    <label>Dept Code (e.g. CSC)</label>
-                    <input type="text" id="edit_course_dept_code" class="input" required>
-                </div>
-                <div class="input-group">
-                    <label>Level</label>
-                    <select id="edit_course_level" class="input" required>
-                        <option value="100">100 Level</option>
-                        <option value="200">200 Level</option>
-                        <option value="300">300 Level</option>
-                        <option value="400">400 Level</option>
-                        <option value="500">500 Level</option>
-                    </select>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="input-group">
-                        <label>Lat</label>
-                        <input type="number" step="any" id="edit_course_lat" class="input" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Lon</label>
-                        <input type="number" step="any" id="edit_course_lon" class="input" required>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>Radius (meters)</label>
-                    <input type="number" id="edit_course_radius" class="input" required>
-                </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Changes</button>
-            </form>
+      <div
+        class="glass-panel card"
+        style="width: 90%; max-width: 500px; padding: 2rem"
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+          "
+        >
+          <h2>Edit Course</h2>
+          <button
+            id="closeEditCourseModal"
+            class="action-btn"
+            style="background: transparent; color: white; font-size: 1.5rem"
+          >
+            ✕
+          </button>
         </div>
+
+        <form id="editCourseForm">
+          <input type="hidden" id="edit_course_db_id" />
+          <div class="input-group">
+            <label>Course Name</label>
+            <input type="text" id="edit_course_name" class="input" required />
+          </div>
+          <div class="input-group">
+            <label>Department</label>
+            <input type="text" id="edit_course_dept" class="input" required />
+          </div>
+          <div class="input-group">
+            <label>Dept Code (e.g. CSC)</label>
+            <input
+              type="text"
+              id="edit_course_dept_code"
+              class="input"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label>Level</label>
+            <select id="edit_course_level" class="input" required>
+              <option value="100">100 Level</option>
+              <option value="200">200 Level</option>
+              <option value="300">300 Level</option>
+              <option value="400">400 Level</option>
+              <option value="500">500 Level</option>
+            </select>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+            <div class="input-group">
+              <label>Lat</label>
+              <input
+                type="number"
+                step="any"
+                id="edit_course_lat"
+                class="input"
+                required
+              />
+            </div>
+            <div class="input-group">
+              <label>Lon</label>
+              <input
+                type="number"
+                step="any"
+                id="edit_course_lon"
+                class="input"
+                required
+              />
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Radius (meters)</label>
+            <input
+              type="number"
+              id="edit_course_radius"
+              class="input"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            style="width: 100%; margin-top: 1rem"
+          >
+            Save Changes
+          </button>
+        </form>
+      </div>
     </div>
 
     <script src="js/admin-logic.js"></script>
