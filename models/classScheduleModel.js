@@ -10,8 +10,6 @@ exports.createSchedule = async ({
   attendance_window_minutes = 10,
   radius_m,
 }) => {
-
-
   const res = await pool.query(
     `INSERT INTO class_schedules (course_code, lecturer_name, location_lat, location_long, class_start_time, class_end_time, attendance_window_minutes, radius_m)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
@@ -24,19 +22,19 @@ exports.createSchedule = async ({
       class_end_time,
       attendance_window_minutes,
       radius_m,
-    ]
+    ],
   );
-  
+
   // Fetch the joined data to include course_name
   const joinedRes = await pool.query(
     `SELECT s.*, c.course_name 
      FROM class_schedules s
      LEFT JOIN courses c ON s.course_code = c.course_id
-     WHERE s.id = $1`, [res.rows[0].id]
+     WHERE s.id = $1`,
+    [res.rows[0].id],
   );
   return joinedRes.rows[0];
 };
-
 
 // Find the most recent active schedule for a course where class_start_time <= now() and still within attendance window
 exports.findActiveScheduleForCourse = async (course_code) => {
@@ -48,7 +46,7 @@ exports.findActiveScheduleForCourse = async (course_code) => {
      AND s.class_start_time <= now() 
      AND now() <= (s.class_end_time + (COALESCE(s.attendance_window_minutes, 10) || ' minutes')::INTERVAL)
      ORDER BY s.class_start_time DESC LIMIT 1`,
-    [course_code]
+    [course_code],
   );
   return res.rows[0];
 };
@@ -59,7 +57,7 @@ exports.getAllSchedules = async () => {
     `SELECT s.*, c.course_name 
      FROM class_schedules s
      LEFT JOIN courses c ON s.course_code = c.course_id
-     ORDER BY s.class_start_time DESC`
+     ORDER BY s.class_start_time DESC`,
   );
   return res.rows;
 };
@@ -70,7 +68,8 @@ exports.getById = async (id) => {
     `SELECT s.*, c.course_name 
      FROM class_schedules s
      LEFT JOIN courses c ON s.course_code = c.course_id
-     WHERE s.id = $1`, [id]
+     WHERE s.id = $1`,
+    [id],
   );
   return res.rows[0];
 };
@@ -79,7 +78,7 @@ exports.getById = async (id) => {
 exports.updateAttendanceWindow = async (id, attendance_window_minutes) => {
   const res = await pool.query(
     `UPDATE class_schedules SET attendance_window_minutes = $1 WHERE id = $2 RETURNING *`,
-    [attendance_window_minutes, id]
+    [attendance_window_minutes, id],
   );
   return res.rows[0];
 };
@@ -94,7 +93,6 @@ exports.updateSchedule = async (id, updates) => {
     attendance_window_minutes,
     radius_m,
   } = updates;
-
 
   // Build dynamic query based on provided fields (excluding undefined/null ones if you wanted to, but we'll assume a full update for simplicity or handle it via coalesce)
 
@@ -115,16 +113,17 @@ exports.updateSchedule = async (id, updates) => {
       class_end_time,
       attendance_window_minutes,
       radius_m,
-      id
-    ]
+      id,
+    ],
   );
-  
+
   // Fetch the joined data to include course_name
   const joinedRes = await pool.query(
     `SELECT s.*, c.course_name 
      FROM class_schedules s
      LEFT JOIN courses c ON s.course_code = c.course_id
-     WHERE s.id = $1`, [id]
+     WHERE s.id = $1`,
+    [id],
   );
   return joinedRes.rows[0];
 };
@@ -133,7 +132,7 @@ exports.updateSchedule = async (id, updates) => {
 exports.deleteSchedule = async (id) => {
   const res = await pool.query(
     `DELETE FROM class_schedules WHERE id = $1 RETURNING *`,
-    [id]
+    [id],
   );
   return res.rows[0];
 };
@@ -176,14 +175,18 @@ exports.getAllSchedulesWithStats = async (filters = {}) => {
   }
 
   query += ` ORDER BY s.class_start_time DESC`;
-  
+
   const res = await pool.query(query, params);
 
   return res.rows;
 };
 
 // Get detailed attendance list for a specific schedule
-exports.getScheduleAttendanceDetails = async (scheduleId, courseCode, filters = {}) => {
+exports.getScheduleAttendanceDetails = async (
+  scheduleId,
+  courseCode,
+  filters = {},
+) => {
   const { department, level } = filters;
   let query = `
     SELECT 
@@ -192,7 +195,8 @@ exports.getScheduleAttendanceDetails = async (scheduleId, courseCode, filters = 
         u.department,
         u.level,
         al.status,
-        al.log_date as marked_at,
+        al.log_time as marked_at,
+        al.log_date as marked_date,
         al.distance_m
     FROM (
         SELECT matric_number FROM student_courses WHERE $2 = ANY(courses)
