@@ -321,24 +321,50 @@ document
 let lecturersData = [];
 
 async function loadLecturers() {
-  const department = document.getElementById("lecturerDeptFilter")?.value;
-  let url = "/api/admin/lecturers";
-  if (department) {
-    url += `?department=${encodeURIComponent(department)}`;
-  }
+  // Always fetch the full list of lecturers to enable robust client-side filtering.
+  // This also ensures the data is available for the assignment modal.
+  const url = "/api/admin/lecturers";
 
   try {
     const response = await adminFetch(url);
     const data = await response.json();
 
     if (data.success) {
-      lecturersData = data.lecturers;
-      displayLecturers(lecturersData);
-      populateLecturerSelect(lecturersData);
+      lecturersData = data.lecturers; // Cache the full list
+      applyLecturerFilters(); // Apply current filters to the full list
     }
   } catch (err) {
     console.error("Failed to load lecturers", err);
   }
+}
+
+function applyLecturerFilters() {
+  const department = document.getElementById("lecturerDeptFilter")?.value;
+  const searchTerm =
+    document.getElementById("lecturerSearch")?.value.toLowerCase() || "";
+
+  let filtered = lecturersData;
+
+  // Filter by department if a value is selected
+  if (department) {
+    // Use a robust comparison to handle potential whitespace/casing issues
+    filtered = filtered.filter(
+      (l) =>
+        l.department &&
+        l.department.trim().toLowerCase() === department.trim().toLowerCase(),
+    );
+  }
+
+  // Filter by search term
+  if (searchTerm) {
+    filtered = filtered.filter(
+      (l) =>
+        l.full_name.toLowerCase().includes(searchTerm) ||
+        l.email.toLowerCase().includes(searchTerm),
+    );
+  }
+
+  displayLecturers(filtered);
 }
 
 function displayLecturers(lecturers) {
@@ -407,19 +433,29 @@ async function openAssignModal(courseId, courseName, department) {
   modal.style.display = "flex";
 
   try {
-    // Fetch lecturers for this specific department
-    const response = await adminFetch(
-      `/api/admin/lecturers?department=${encodeURIComponent(department)}`,
-    );
+    // Fetch ALL lecturers to work around the broken backend filter.
+    // We will filter on the client-side.
+    const response = await adminFetch(`/api/admin/lecturers`);
     const data = await response.json();
 
     if (data.success) {
-      populateLecturerSelect(data.lecturers);
+      // Filter lecturers by the course's department.
+      // This comparison is case-insensitive and trims whitespace to be more robust.
+      const departmentLecturers = data.lecturers.filter(
+        (lecturer) =>
+          lecturer.department &&
+          department &&
+          lecturer.department.trim().toLowerCase() ===
+            department.trim().toLowerCase(),
+      );
+      populateLecturerSelect(departmentLecturers);
     } else {
       console.error("Failed to load lecturers for department");
+      populateLecturerSelect([]); // Ensure dropdown is empty on failure
     }
   } catch (err) {
     console.error("Error fetching lecturers", err);
+    populateLecturerSelect([]); // Also empty dropdown on network error
   }
 }
 
@@ -812,16 +848,13 @@ document
   .getElementById("courseDeptFilter")
   ?.addEventListener("change", loadCourses);
 
-document.getElementById("lecturerSearch")?.addEventListener("input", (e) => {
-  const searchTerm = e.target.value.toLowerCase();
-  const filtered = lecturersData.filter(
-    (l) =>
-      l.full_name.toLowerCase().includes(searchTerm) ||
-      l.email.toLowerCase().includes(searchTerm) ||
-      l.department.toLowerCase().includes(searchTerm),
-  );
-  displayLecturers(filtered);
-});
+document
+  .getElementById("lecturerDeptFilter")
+  ?.addEventListener("change", applyLecturerFilters);
+
+document
+  .getElementById("lecturerSearch")
+  ?.addEventListener("input", applyLecturerFilters);
 
 document
   .getElementById("mainSchedLevelFilter")
