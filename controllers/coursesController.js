@@ -1,5 +1,15 @@
 const courseModel = require("../models/courseModel");
 
+const normalizeEligibleDepartments = (eligibleDepartments) => {
+  if (!Array.isArray(eligibleDepartments)) return null;
+
+  const normalized = eligibleDepartments
+    .map((dept) => String(dept).trim().toUpperCase())
+    .filter(Boolean);
+
+  return normalized.length > 0 ? Array.from(new Set(normalized)) : null;
+};
+
 exports.listCourses = async (req, res) => {
   const { department, level } = req.query;
   try {
@@ -7,6 +17,10 @@ exports.listCourses = async (req, res) => {
     // If lecturer is logged in, only show their assigned courses
     if (req.user && req.user.role === "lecturer") {
       courses = await courseModel.getCoursesByLecturerId(req.user.id);
+    } else if (req.user && req.user.matric_number && !req.user.role) {
+      courses = await courseModel.getEligibleCoursesForStudent(
+        req.user.matric_number,
+      );
     } else {
       // Otherwise (admin or student), show all courses
       courses = await courseModel.getAllCourses(department, level);
@@ -67,7 +81,7 @@ exports.getCourseByCourseCode = async (req, res) => {
 };
 
 exports.createCourse = async (req, res) => {
-  const { course_id, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id } = req.body;
+  const { course_id, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id, eligible_departments } = req.body;
 
   if (!course_id || !course_name || !center_lat || !center_lon || !radius_m || !department || !department_code || !level) {
     return res.status(400).json({
@@ -87,6 +101,7 @@ exports.createCourse = async (req, res) => {
       department_code,
       level,
       lecturer_id,
+      eligible_departments: normalizeEligibleDepartments(eligible_departments),
     });
     return res.status(201).json({ success: true, course });
   } catch (err) {
@@ -99,7 +114,7 @@ exports.createCourse = async (req, res) => {
 
 exports.updateCourse = async (req, res) => {
   const { id } = req.params;
-  const { course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id } = req.body;
+  const { course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id, eligible_departments } = req.body;
 
   if (
     course_name === undefined &&
@@ -109,7 +124,8 @@ exports.updateCourse = async (req, res) => {
     department === undefined &&
     department_code === undefined &&
     level === undefined &&
-    lecturer_id === undefined
+    lecturer_id === undefined &&
+    eligible_departments === undefined
   ) {
     return res.status(400).json({
       success: false,
@@ -128,6 +144,10 @@ exports.updateCourse = async (req, res) => {
       department_code,
       level,
       lecturer_id,
+      eligible_departments:
+        eligible_departments === undefined
+          ? undefined
+          : normalizeEligibleDepartments(eligible_departments),
     });
 
     if (!updatedCourse)
@@ -185,7 +205,14 @@ exports.deleteCourse = async (req, res) => {
 exports.getAdminDepartments = async (req, res) => {
   try {
     const departments = await courseModel.getUniqueDepartments();
-    return res.status(200).json({ success: true, departments });
+    const departmentCodes = await courseModel.getUniqueDepartmentCodes();
+    const departmentOptions = await courseModel.getDepartmentCodeOptions();
+    return res.status(200).json({
+      success: true,
+      departments,
+      departmentCodes,
+      departmentOptions,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, message: "Internal Server Error" });

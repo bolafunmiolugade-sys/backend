@@ -1,8 +1,10 @@
 const pool = require("../db/config");
 
+const courseSelect = `c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
+            c.department, c.department_code, c.level, c.eligible_departments, c.lecturer_id, l.full_name as lecturer_name`;
+
 exports.getAllCourses = async (department = null, level = null) => {
-  let query = `SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
-            c.department, c.department_code, c.level, c.lecturer_id, l.full_name as lecturer_name,
+  let query = `SELECT ${courseSelect},
             (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id`;
@@ -31,8 +33,7 @@ exports.getAllCourses = async (department = null, level = null) => {
 
 exports.getCourseById = async (courseId) => {
   const res = await pool.query(
-    `SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
-            c.department, c.department_code, c.level, c.lecturer_id, l.full_name as lecturer_name,
+    `SELECT ${courseSelect},
             (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id
@@ -44,8 +45,7 @@ exports.getCourseById = async (courseId) => {
 
 exports.getCourseByCourseCode = async (course_id) => {
   const res = await pool.query(
-    `SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
-            c.department, c.department_code, c.level, c.lecturer_id, l.full_name as lecturer_name
+    `SELECT ${courseSelect}
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id
      WHERE c.course_id = $1`,
@@ -56,14 +56,61 @@ exports.getCourseByCourseCode = async (course_id) => {
 
 exports.getCoursesByLecturerId = async (lecturerId) => {
   const res = await pool.query(
-    `SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m, 
-            c.department, c.department_code, c.level, c.lecturer_id, l.full_name as lecturer_name,
+    `SELECT ${courseSelect},
             (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id
      WHERE c.lecturer_id = $1
      ORDER BY c.department ASC, c.level ASC, c.course_id ASC`,
     [lecturerId]
+  );
+  return res.rows;
+};
+
+exports.getEligibleCoursesForStudent = async (matricNumber) => {
+  const res = await pool.query(
+    `WITH student AS (
+       SELECT matric_number, level, department
+       FROM users
+       WHERE matric_number = $1
+     ),
+     student_with_code AS (
+       SELECT s.*,
+              (
+                SELECT UPPER(REGEXP_REPLACE(c2.department_code, '[[:space:]]+', '', 'g'))
+                FROM courses c2
+                WHERE c2.department_code IS NOT NULL
+                  AND REGEXP_REPLACE(c2.department_code, '[[:space:]]+', '', 'g') <> ''
+                  AND LOWER(TRIM(c2.department)) = LOWER(TRIM(s.department))
+                ORDER BY c2.course_id ASC
+                LIMIT 1
+              ) AS department_code
+       FROM student s
+     )
+     SELECT ${courseSelect},
+            (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
+     FROM courses c
+     LEFT JOIN lecturers l ON c.lecturer_id = l.id
+     CROSS JOIN student_with_code s
+     WHERE c.level = s.level
+       AND (
+         LOWER(TRIM(c.department)) = LOWER(TRIM(s.department))
+         OR (
+           s.department_code IS NOT NULL
+           AND UPPER(REGEXP_REPLACE(c.department_code, '[[:space:]]+', '', 'g')) = s.department_code
+         )
+         OR (
+           s.department_code IS NOT NULL
+           AND s.department_code = ANY(
+             ARRAY(SELECT UPPER(REGEXP_REPLACE(value, '[[:space:]]+', '', 'g')) FROM unnest(c.eligible_departments) AS value)
+           )
+         )
+         OR 'ALL' = ANY(
+           ARRAY(SELECT UPPER(REGEXP_REPLACE(value, '[[:space:]]+', '', 'g')) FROM unnest(c.eligible_departments) AS value)
+         )
+       )
+     ORDER BY c.department ASC, c.level ASC, c.course_id ASC`,
+    [matricNumber]
   );
   return res.rows;
 };
@@ -98,11 +145,12 @@ exports.createCourse = async ({
   department_code,
   level,
   lecturer_id = null,
+  eligible_departments = null,
 }) => {
   const res = await pool.query(
-    `INSERT INTO courses (course_id, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-    [course_id, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id]
+    `INSERT INTO courses (course_id, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id, eligible_departments)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+    [course_id, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id, eligible_departments]
   );
   return res.rows[0];
 };
@@ -118,8 +166,10 @@ exports.updateCourse = async (
     department_code = null,
     level = null,
     lecturer_id = null,
+    eligible_departments = undefined,
   } = {}
 ) => {
+  const hasEligibleDepartments = eligible_departments !== undefined;
   const res = await pool.query(
     `UPDATE courses
      SET course_name = COALESCE($2, course_name),
@@ -129,10 +179,11 @@ exports.updateCourse = async (
          department = COALESCE($6, department),
          department_code = COALESCE($7, department_code),
          level = COALESCE($8, level),
-         lecturer_id = COALESCE($9, lecturer_id)
+         lecturer_id = COALESCE($9, lecturer_id),
+         eligible_departments = CASE WHEN $10 THEN $11 ELSE eligible_departments END
      WHERE course_id = $1
      RETURNING *`,
-    [courseId, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id]
+    [courseId, course_name, center_lat, center_lon, radius_m, department, department_code, level, lecturer_id, hasEligibleDepartments, eligible_departments]
   );
   return res.rows[0];
 };
@@ -148,6 +199,36 @@ exports.getUniqueDepartments = async () => {
     ) combined_depts ORDER BY department`
   );
   return res.rows.map(r => r.department);
+};
+
+exports.getUniqueDepartmentCodes = async () => {
+  const res = await pool.query(
+    `SELECT DISTINCT UPPER(REGEXP_REPLACE(department_code, '[[:space:]]+', '', 'g')) as department_code
+     FROM courses
+     WHERE department_code IS NOT NULL AND REGEXP_REPLACE(department_code, '[[:space:]]+', '', 'g') <> ''
+     ORDER BY department_code`
+  );
+  return res.rows.map((r) => r.department_code);
+};
+
+exports.getDepartmentCodeOptions = async () => {
+  const res = await pool.query(
+    `SELECT DISTINCT ON (department_code)
+       department_code,
+       department
+     FROM (
+       SELECT
+         UPPER(REGEXP_REPLACE(department_code, '[[:space:]]+', '', 'g')) as department_code,
+         INITCAP(TRIM(department)) as department
+       FROM courses
+       WHERE department_code IS NOT NULL
+         AND REGEXP_REPLACE(department_code, '[[:space:]]+', '', 'g') <> ''
+         AND department IS NOT NULL
+         AND TRIM(department) <> ''
+     ) normalized_departments
+     ORDER BY department_code, department`
+  );
+  return res.rows;
 };
 
 exports.deleteCourse = async (courseId) => {

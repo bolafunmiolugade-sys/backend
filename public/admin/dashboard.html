@@ -114,6 +114,47 @@
                 />
               </div>
               <div class="input-group">
+                <label for="course_level">Level</label>
+                <select id="course_level" class="input" required>
+                  <option value="100">100 Level</option>
+                  <option value="200">200 Level</option>
+                  <option value="300">300 Level</option>
+                  <option value="400">400 Level</option>
+                  <option value="500">500 Level</option>
+                </select>
+              </div>
+              <div class="input-group" style="grid-column: span 2">
+                <label>Eligible Departments</label>
+                <input type="hidden" id="eligible_departments" value="" />
+                <div class="multi-select" data-target="eligible_departments">
+                  <button
+                    type="button"
+                    class="multi-select-toggle"
+                    aria-expanded="false"
+                  >
+                    Null
+                  </button>
+                  <div class="multi-select-menu">
+                    <button
+                      type="button"
+                      class="multi-select-option"
+                      data-value=""
+                    >
+                      <span class="multi-select-check"></span>
+                      <span>Null</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="multi-select-option"
+                      data-value="ALL"
+                    >
+                      <span class="multi-select-check"></span>
+                      <span>ALL Departments</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="input-group">
                 <label for="center_lat">Center Latitude</label>
                 <input
                   type="number"
@@ -832,6 +873,44 @@
               class="input"
               required
             />
+          </div>
+          <div class="input-group">
+            <label>Eligible Departments</label>
+            <input
+              type="hidden"
+              id="edit_course_eligible_departments"
+              value=""
+            />
+            <div
+              class="multi-select"
+              data-target="edit_course_eligible_departments"
+            >
+              <button
+                type="button"
+                class="multi-select-toggle"
+                aria-expanded="false"
+              >
+                Null
+              </button>
+              <div class="multi-select-menu">
+                <button
+                  type="button"
+                  class="multi-select-option"
+                  data-value=""
+                >
+                  <span class="multi-select-check"></span>
+                  <span>Null</span>
+                </button>
+                <button
+                  type="button"
+                  class="multi-select-option"
+                  data-value="ALL"
+                >
+                  <span class="multi-select-check"></span>
+                  <span>ALL Departments</span>
+                </button>
+              </div>
+            </div>
           </div>
           <div class="input-group">
             <label>Level</label>

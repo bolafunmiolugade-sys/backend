@@ -14,7 +14,11 @@ const app = express();
 // Auto-run migrations on startup
 async function runMigrations() {
   try {
-    const migrations = ["add_radius_m.sql", "add_level_to_courses.sql"];
+    const migrations = [
+      "add_radius_m.sql",
+      "add_level_to_courses.sql",
+      "add_eligible_departments_to_courses.sql",
+    ];
 
     for (const file of migrations) {
       const sqlPath = path.join(__dirname, "db", file);

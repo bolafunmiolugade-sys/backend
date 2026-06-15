@@ -111,11 +111,167 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // 4. Initial Load
+  initializeEligibleDepartmentDropdowns();
   loadCourses();
   loadDepartments();
 });
 
 // --- Courses Management ---
+
+function getSelectedEligibleDepartments(selectId) {
+  const input = document.getElementById(selectId);
+  if (!input || !input.value) return null;
+
+  const selected = input.value
+    .split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
+
+  return selected.length > 0 ? selected : null;
+}
+
+function setSelectedEligibleDepartments(selectId, values) {
+  const input = document.getElementById(selectId);
+  if (!input) return;
+
+  const normalizedValues = Array.from(
+    new Set(
+      (
+        Array.isArray(values)
+          ? values
+          : typeof values === "string" && values
+            ? values.split(",")
+            : []
+      )
+        .map((value) => String(value).trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  );
+
+  input.value = normalizedValues.join(",");
+  updateEligibleDepartmentDropdown(selectId);
+}
+
+function updateEligibleDepartmentDropdown(inputId) {
+  const input = document.getElementById(inputId);
+  const dropdown = document.querySelector(`.multi-select[data-target="${inputId}"]`);
+  if (!input || !dropdown) return;
+
+  const values = new Set(getSelectedEligibleDepartments(inputId) || []);
+  const toggle = dropdown.querySelector(".multi-select-toggle");
+  const options = dropdown.querySelectorAll(".multi-select-option");
+
+  options.forEach((option) => {
+    const value = option.dataset.value || "";
+    option.classList.toggle(
+      "selected",
+      value === "" ? values.size === 0 : values.has(value),
+    );
+  });
+
+  if (!toggle) return;
+  if (values.size === 0) {
+    toggle.textContent = "Null";
+  } else if (values.has("ALL")) {
+    toggle.textContent = "ALL Departments";
+  } else {
+    const selectedLabels = Array.from(values).map((value) => {
+      const option = Array.from(
+        dropdown.querySelectorAll(".multi-select-option"),
+      ).find((item) => item.dataset.value === value);
+      return option?.querySelector("span:last-child")?.textContent || value;
+    });
+    toggle.textContent = selectedLabels.join(", ");
+  }
+}
+
+function toggleEligibleDepartmentValue(inputId, value) {
+  const currentValues = new Set(getSelectedEligibleDepartments(inputId) || []);
+  const normalizedValue = String(value || "").trim().toUpperCase();
+
+  if (!normalizedValue) {
+    setSelectedEligibleDepartments(inputId, []);
+    return;
+  }
+
+  if (normalizedValue === "ALL") {
+    setSelectedEligibleDepartments(
+      inputId,
+      currentValues.has("ALL") ? [] : ["ALL"],
+    );
+    return;
+  }
+
+  currentValues.delete("ALL");
+  if (currentValues.has(normalizedValue)) {
+    currentValues.delete(normalizedValue);
+  } else {
+    currentValues.add(normalizedValue);
+  }
+
+  setSelectedEligibleDepartments(inputId, Array.from(currentValues));
+}
+
+function initializeEligibleDepartmentDropdowns() {
+  document.querySelectorAll(".multi-select").forEach((dropdown) => {
+    if (dropdown.dataset.initialized === "true") return;
+
+    const inputId = dropdown.dataset.target;
+    const toggle = dropdown.querySelector(".multi-select-toggle");
+    const menu = dropdown.querySelector(".multi-select-menu");
+
+    toggle?.addEventListener("click", () => {
+      const isOpen = dropdown.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    menu?.addEventListener("click", (event) => {
+      const option = event.target.closest(".multi-select-option");
+      if (!option) return;
+      toggleEligibleDepartmentValue(inputId, option.dataset.value || "");
+    });
+
+    dropdown.dataset.initialized = "true";
+    updateEligibleDepartmentDropdown(inputId);
+  });
+}
+
+document.addEventListener("click", (event) => {
+  document.querySelectorAll(".multi-select.open").forEach((dropdown) => {
+    if (dropdown.contains(event.target)) return;
+    dropdown.classList.remove("open");
+    dropdown
+      .querySelector(".multi-select-toggle")
+      ?.setAttribute("aria-expanded", "false");
+  });
+});
+
+function normalizeEligibleDepartmentCodes(values) {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => String(value).trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function buildEligibleDepartmentOption(value, label) {
+  const option = document.createElement("button");
+  option.type = "button";
+  option.className = "multi-select-option";
+  option.dataset.value = value;
+
+  const check = document.createElement("span");
+  check.className = "multi-select-check";
+
+  const text = document.createElement("span");
+  text.textContent = label;
+
+  option.appendChild(check);
+  option.appendChild(text);
+  return option;
+}
 
 async function loadCourses() {
   const department = document.getElementById("courseDeptFilter")?.value;
@@ -192,6 +348,10 @@ document.getElementById("courseForm")?.addEventListener("submit", async (e) => {
     course_name: document.getElementById("course_name").value,
     department: document.getElementById("department").value,
     department_code: document.getElementById("department_code").value,
+    level: document.getElementById("course_level").value,
+    eligible_departments: getSelectedEligibleDepartments(
+      "eligible_departments",
+    ),
     center_lat: parseFloat(document.getElementById("center_lat").value),
     center_lon: parseFloat(document.getElementById("center_lon").value),
     radius_m: parseInt(document.getElementById("radius_m").value),
@@ -214,6 +374,7 @@ document.getElementById("courseForm")?.addEventListener("submit", async (e) => {
       msg.style.color = "#4ade80";
       msg.style.display = "block";
       document.getElementById("courseForm").reset();
+      setSelectedEligibleDepartments("eligible_departments", []);
       loadCourses();
     } else {
       const data = await response.json();
@@ -261,6 +422,10 @@ async function openEditCourseModal(id) {
         course.department_code;
       document.getElementById("edit_course_level").value =
         course.level || "100";
+      setSelectedEligibleDepartments(
+        "edit_course_eligible_departments",
+        course.eligible_departments,
+      );
       document.getElementById("edit_course_lat").value = course.center_lat;
       document.getElementById("edit_course_lon").value = course.center_lon;
       document.getElementById("edit_course_radius").value = course.radius_m;
@@ -283,6 +448,9 @@ document
       course_name: document.getElementById("edit_course_name").value,
       department: document.getElementById("edit_course_dept").value,
       department_code: document.getElementById("edit_course_dept_code").value,
+      eligible_departments: getSelectedEligibleDepartments(
+        "edit_course_eligible_departments",
+      ),
       level: document.getElementById("edit_course_level").value,
       center_lat: parseFloat(document.getElementById("edit_course_lat").value),
       center_lon: parseFloat(document.getElementById("edit_course_lon").value),
@@ -659,6 +827,9 @@ async function loadDepartments() {
     const data = await response.json();
     if (data.success) {
       populateDepartmentSelects(data.departments);
+      populateEligibleDepartmentSelects(
+        data.departmentOptions || data.departmentCodes || [],
+      );
     }
   } catch (err) {
     console.error("Failed to load departments", err);
@@ -692,6 +863,66 @@ function populateDepartmentSelects(departments) {
       opt.textContent = dept;
       select.appendChild(opt);
     });
+  });
+}
+
+function normalizeEligibleDepartmentOptions(options) {
+  const byCode = new Map();
+
+  options.forEach((option) => {
+    const code = normalizeEligibleDepartmentCodes([
+      typeof option === "object" && option !== null
+        ? option.department_code
+        : option,
+    ])[0];
+    if (!code || code === "ALL") return;
+
+    const label =
+      typeof option === "object" && option !== null
+        ? option.department || option.department_name || code
+        : code;
+
+    if (!byCode.has(code)) {
+      byCode.set(code, { code, label: String(label).trim() || code });
+    }
+  });
+
+  return Array.from(byCode.values()).sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+}
+
+function populateEligibleDepartmentSelects(departmentOptions) {
+  const inputIds = [
+    "eligible_departments",
+    "edit_course_eligible_departments",
+  ];
+  const normalizedOptions = normalizeEligibleDepartmentOptions(
+    departmentOptions,
+  );
+
+  inputIds.forEach((inputId) => {
+    const dropdown = document.querySelector(
+      `.multi-select[data-target="${inputId}"]`,
+    );
+    const menu = dropdown?.querySelector(".multi-select-menu");
+    if (!menu) return;
+
+    const selectedValues = getSelectedEligibleDepartments(inputId) || [];
+    while (menu.children.length > 2) {
+      menu.removeChild(menu.lastElementChild);
+    }
+
+    normalizedOptions.forEach((departmentOption) => {
+      menu.appendChild(
+        buildEligibleDepartmentOption(
+          departmentOption.code,
+          departmentOption.label,
+        ),
+      );
+    });
+
+    setSelectedEligibleDepartments(inputId, selectedValues);
   });
 }
 
