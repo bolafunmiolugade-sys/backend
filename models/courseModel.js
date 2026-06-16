@@ -88,7 +88,12 @@ exports.getEligibleCoursesForStudent = async (matricNumber) => {
               ) AS department_code
        FROM student s
      )
-     SELECT ${courseSelect},
+     SELECT c.course_id, c.course_name, c.center_lat, c.center_lon, c.radius_m,
+            INITCAP(TRIM(s.department)) as department,
+            COALESCE(s.department_code, UPPER(REGEXP_REPLACE(s.department, '[[:space:]]+', '', 'g'))) as department_code,
+            c.department as owning_department,
+            c.department_code as owning_department_code,
+            c.level, c.eligible_departments, c.lecturer_id, l.full_name as lecturer_name,
             (SELECT COUNT(*) FROM student_courses sc WHERE c.course_id = ANY(sc.courses)) as student_count
      FROM courses c
      LEFT JOIN lecturers l ON c.lecturer_id = l.id
