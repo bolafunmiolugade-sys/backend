@@ -1,4 +1,5 @@
 const userCourseModel = require("../models/userCourseModel");
+const courseModel = require("../models/courseModel");
 
 exports.registerCourses = async (req, res) => {
   const matricNumber = req.user.matric_number;
@@ -31,7 +32,12 @@ exports.registerCourses = async (req, res) => {
 exports.getMyCourses = async (req, res) => {
   const matricNumber = req.user.matric_number;
   try {
-    const courses = await userCourseModel.getUserCourses(matricNumber);
+    let courses = await userCourseModel.getUserCourses(matricNumber);
+
+    if (courses.length === 0) {
+      courses = await courseModel.getEligibleCoursesForStudent(matricNumber);
+    }
+
     return res.status(200).json({ success: true, courses });
   } catch (err) {
     console.error(err);
