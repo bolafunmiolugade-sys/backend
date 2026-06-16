@@ -76,6 +76,7 @@ exports.getEligibleCoursesForStudent = async (matricNumber) => {
      ),
      student_with_code AS (
        SELECT s.*,
+              UPPER(REGEXP_REPLACE(s.department, '[[:space:]]+', '', 'g')) AS department_key,
               (
                 SELECT UPPER(REGEXP_REPLACE(c2.department_code, '[[:space:]]+', '', 'g'))
                 FROM courses c2
@@ -104,6 +105,9 @@ exports.getEligibleCoursesForStudent = async (matricNumber) => {
            AND s.department_code = ANY(
              ARRAY(SELECT UPPER(REGEXP_REPLACE(value, '[[:space:]]+', '', 'g')) FROM unnest(c.eligible_departments) AS value)
            )
+         )
+         OR s.department_key = ANY(
+           ARRAY(SELECT UPPER(REGEXP_REPLACE(value, '[[:space:]]+', '', 'g')) FROM unnest(c.eligible_departments) AS value)
          )
          OR 'ALL' = ANY(
            ARRAY(SELECT UPPER(REGEXP_REPLACE(value, '[[:space:]]+', '', 'g')) FROM unnest(c.eligible_departments) AS value)
@@ -213,20 +217,36 @@ exports.getUniqueDepartmentCodes = async () => {
 
 exports.getDepartmentCodeOptions = async () => {
   const res = await pool.query(
-    `SELECT DISTINCT ON (department_code)
-       department_code,
-       department
-     FROM (
+    `WITH course_options AS (
        SELECT
-         UPPER(REGEXP_REPLACE(department_code, '[[:space:]]+', '', 'g')) as department_code,
-         INITCAP(TRIM(department)) as department
+         UPPER(REGEXP_REPLACE(department_code, '[[:space:]]+', '', 'g')) as eligible_value,
+         INITCAP(TRIM(department)) as department,
+         1 as priority
        FROM courses
        WHERE department_code IS NOT NULL
          AND REGEXP_REPLACE(department_code, '[[:space:]]+', '', 'g') <> ''
          AND department IS NOT NULL
          AND TRIM(department) <> ''
+     ),
+     user_options AS (
+       SELECT
+         UPPER(TRIM(department)) as eligible_value,
+         INITCAP(TRIM(department)) as department,
+         2 as priority
+       FROM users
+       WHERE department IS NOT NULL
+         AND TRIM(department) <> ''
+     )
+     SELECT DISTINCT ON (department)
+       eligible_value,
+       CASE WHEN priority = 1 THEN eligible_value ELSE NULL END as department_code,
+       department
+     FROM (
+       SELECT * FROM course_options
+       UNION ALL
+       SELECT * FROM user_options
      ) normalized_departments
-     ORDER BY department_code, department`
+     ORDER BY department, priority, eligible_value`
   );
   return res.rows;
 };

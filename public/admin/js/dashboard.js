@@ -872,7 +872,7 @@ function normalizeEligibleDepartmentOptions(options) {
   options.forEach((option) => {
     const code = normalizeEligibleDepartmentCodes([
       typeof option === "object" && option !== null
-        ? option.department_code
+        ? option.eligible_value || option.department_code
         : option,
     ])[0];
     if (!code || code === "ALL") return;
