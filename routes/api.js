@@ -51,10 +51,12 @@ router.get("/classes/schedule/:id/attendance", auth, isLecturer, attendanceContr
 
 // Student course registration (must be logged in)
 router.post("/register-courses", auth, userCourseController.registerCourses);
+router.get("/available-courses", auth, userCourseController.getAvailableCourses);
 router.get("/my-courses", auth, userCourseController.getMyCourses);
 
 // Public course listing (now requires auth for filtered results)
 router.get("/courses", auth, coursesController.listCourses);
+router.get("/courses/available", auth, userCourseController.getAvailableCourses);
 
 router.get("/courses/:id", coursesController.getCourse);
 router.get("/courses/:id/members", auth, isLecturer, coursesController.getCourseMembers);

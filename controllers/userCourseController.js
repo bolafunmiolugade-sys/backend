@@ -32,20 +32,29 @@ exports.registerCourses = async (req, res) => {
 exports.getMyCourses = async (req, res) => {
   const matricNumber = req.user.matric_number;
   try {
-    const registeredCourses = await userCourseModel.getUserCourses(matricNumber);
-    const eligibleCourses =
+    const courses = await userCourseModel.getUserCourses(matricNumber);
+    const availableCourses =
       await courseModel.getEligibleCoursesForStudent(matricNumber);
 
-    const coursesById = new Map();
-    [...registeredCourses, ...eligibleCourses].forEach((course) => {
-      if (course?.course_id) {
-        coursesById.set(course.course_id, course);
-      }
+    return res.status(200).json({
+      success: true,
+      courses,
+      registeredCourses: courses,
+      availableCourses,
     });
-
+  } catch (err) {
+    console.error(err);
     return res
-      .status(200)
-      .json({ success: true, courses: Array.from(coursesById.values()) });
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+exports.getAvailableCourses = async (req, res) => {
+  const matricNumber = req.user.matric_number;
+  try {
+    const courses = await courseModel.getEligibleCoursesForStudent(matricNumber);
+    return res.status(200).json({ success: true, courses });
   } catch (err) {
     console.error(err);
     return res
