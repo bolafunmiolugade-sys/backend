@@ -32,13 +32,20 @@ exports.registerCourses = async (req, res) => {
 exports.getMyCourses = async (req, res) => {
   const matricNumber = req.user.matric_number;
   try {
-    let courses = await userCourseModel.getUserCourses(matricNumber);
+    const registeredCourses = await userCourseModel.getUserCourses(matricNumber);
+    const eligibleCourses =
+      await courseModel.getEligibleCoursesForStudent(matricNumber);
 
-    if (courses.length === 0) {
-      courses = await courseModel.getEligibleCoursesForStudent(matricNumber);
-    }
+    const coursesById = new Map();
+    [...registeredCourses, ...eligibleCourses].forEach((course) => {
+      if (course?.course_id) {
+        coursesById.set(course.course_id, course);
+      }
+    });
 
-    return res.status(200).json({ success: true, courses });
+    return res
+      .status(200)
+      .json({ success: true, courses: Array.from(coursesById.values()) });
   } catch (err) {
     console.error(err);
     return res
