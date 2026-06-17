@@ -72,7 +72,20 @@ exports.getallSchedules = async (req, res) => {
     if (req.user && req.user.role === 'lecturer') {
       filters.lecturer_id = req.user.id;
     }
-    const schedules = await classScheduleModel.getAllSchedulesWithStats(filters);
+    let schedules = await classScheduleModel.getAllSchedulesWithStats(filters);
+
+    if (req.user && req.user.matric_number && !req.user.role) {
+      const eligibleCourses = await courseModel.getEligibleCoursesForStudent(
+        req.user.matric_number,
+      );
+      const eligibleCourseIds = new Set(
+        eligibleCourses.map((course) => course.course_id),
+      );
+      schedules = schedules.filter((schedule) =>
+        eligibleCourseIds.has(schedule.course_code),
+      );
+    }
+
     return res.status(200).json({ success: true, schedules });
   } catch (err) {
     console.error(err);

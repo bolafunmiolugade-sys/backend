@@ -1,6 +1,7 @@
 const pool = require("../db/config");
 const { calculateDistance } = require("../utils/haversine");
 const classScheduleModel = require("../models/classScheduleModel");
+const courseModel = require("../models/courseModel");
 
 const A_MAX = 15; // Max allowed GPS accuracy (meters)
 const GEOFENCE_MAX_M = 50; // Maximum allowed distance from class location (meters)
@@ -20,6 +21,19 @@ exports.markAttendance = async (req, res) => {
   const matric_number = req.user.matric_number;
 
   try {
+    const eligibleCourses =
+      await courseModel.getEligibleCoursesForStudent(matric_number);
+    const isEligible = eligibleCourses.some(
+      (course) => course.course_id === course_code,
+    );
+
+    if (!isEligible) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not eligible to mark attendance for this course.",
+      });
+    }
+
     // App-level anti-spoof and accuracy checks (fast rejects)
     if (is_mock_location_enabled) {
       return res.status(403).json({
