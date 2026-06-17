@@ -21,10 +21,26 @@ exports.markAttendance = async (req, res) => {
   const matric_number = req.user.matric_number;
 
   try {
+    if (!schedule_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Schedule ID is required.",
+      });
+    }
+
+    const scheduleForEligibility = await classScheduleModel.getById(schedule_id);
+    if (!scheduleForEligibility) {
+      return res.status(404).json({
+        success: false,
+        message: "Schedule not found.",
+      });
+    }
+
+    const scheduleCourseCode = scheduleForEligibility.course_code;
     const eligibleCourses =
       await courseModel.getEligibleCoursesForStudent(matric_number);
     const isEligible = eligibleCourses.some(
-      (course) => course.course_id === course_code,
+      (course) => course.course_id === scheduleCourseCode,
     );
 
     if (!isEligible) {
@@ -48,17 +64,10 @@ exports.markAttendance = async (req, res) => {
       });
     }
 
-    if (!schedule_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Schedule ID is required.",
-      });
-    }
-
     // 1. Course Validation
     const courseQuery = await pool.query(
       "SELECT * FROM courses WHERE course_id = $1",
-      [course_code],
+      [scheduleCourseCode],
     );
     if (courseQuery.rows.length === 0) {
       return res
@@ -68,9 +77,9 @@ exports.markAttendance = async (req, res) => {
 
     // 2. Schedule Discovery
     const schedule =
-      await classScheduleModel.findActiveScheduleForCourse(course_code);
+      await classScheduleModel.findActiveScheduleForCourse(scheduleCourseCode);
 
-    if (!schedule) {
+    if (!schedule || String(schedule.id) !== String(schedule_id)) {
       return res.status(404).json({
         success: false,
         message: "No active schedule found for this course.",
@@ -133,7 +142,7 @@ exports.markAttendance = async (req, res) => {
         [
           userId,
           matric_number,
-          course_code,
+          scheduleCourseCode,
           schedule_id,
           device_uuid,
           "OUTSIDE_RANGE", // Fixed string literal for status
@@ -164,7 +173,7 @@ exports.markAttendance = async (req, res) => {
     // 6. Device Lock Check
     const deviceCheck = await pool.query(
       "SELECT * FROM attendance_logs WHERE device_uuid = $1 AND schedule_id = $2 AND course_id = $3 AND log_date = CURRENT_DATE AND status = 'VALID'",
-      [device_uuid, schedule_id, course_code],
+      [device_uuid, schedule_id, scheduleCourseCode],
     );
     if (deviceCheck.rows.length > 0) {
       return res.status(403).json({
@@ -180,7 +189,7 @@ exports.markAttendance = async (req, res) => {
       [
         userId,
         matric_number,
-        course_code,
+        scheduleCourseCode,
         schedule_id,
         device_uuid,
         distance.toFixed(2),

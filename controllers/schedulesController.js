@@ -74,7 +74,12 @@ exports.getallSchedules = async (req, res) => {
     }
     let schedules = await classScheduleModel.getAllSchedulesWithStats(filters);
 
-    if (req.user && req.user.matric_number && !req.user.role) {
+    if (
+      req.user &&
+      req.user.matric_number &&
+      req.user.role !== "lecturer" &&
+      req.user.role !== "admin"
+    ) {
       const eligibleCourses = await courseModel.getEligibleCoursesForStudent(
         req.user.matric_number,
       );
